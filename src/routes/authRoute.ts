@@ -16,9 +16,6 @@ authRoutes.post('/admin-login', authController.adminLogin);
 // Verify username
 authRoutes.post('/verify', authController.verifyUserName);
 
-// Verify username
-authRoutes.get('/hello', authController.hello);
-
 // forgot-password
 authRoutes.post('/forgot-password', authController.forgotPassword);
 

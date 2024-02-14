@@ -201,8 +201,4 @@ export class AuthController {
             return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
         }
     }
-
-    public async hello(req: any, res: any) {
-        return sendResponse(res, StatusCodes.OK, "User Login Successfully");
-    }
 }
