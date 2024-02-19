@@ -23,7 +23,7 @@ data_source_1.default
 // create and setup express app
 const app = (0, express_1.default)();
 app.use((0, cors_1.default)());
-// app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express_1.default.static('uploads'));
 // app.use(bodyParser.json());
 app.use(express_1.default.json());
 app.use('', mainRoute_1.default);

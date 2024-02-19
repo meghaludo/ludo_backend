@@ -22,4 +22,7 @@ adminRoute.get("/get-dashboard-details", adminController.getDashboardDetails);
 // admin commission details
 adminRoute.post("/add-edit-commission", adminController.addEditAdminCommission);
 adminRoute.get("/get-commission", adminController.getAdminCommission);
+// admin refer commission details
+adminRoute.post("/refer-add-edit-commission", adminController.addEditReferCommission);
+adminRoute.get("/refer-get-commission", adminController.getReferAdminCommission);
 exports.default = adminRoute;

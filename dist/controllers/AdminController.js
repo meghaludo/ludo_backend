@@ -14,6 +14,7 @@ const withdraw_entity_1 = require("../entity/withdraw.entity");
 const contactUs_entity_1 = require("../entity/contactUs.entity");
 const gameTable_entity_1 = require("../entity/gameTable.entity");
 const adminCommission_entity_1 = require("../entity/adminCommission.entity");
+const referCommission_entity_1 = require("../entity/referCommission.entity");
 class AdminController {
     async updateAdmin(req, res) {
         try {
@@ -261,6 +262,30 @@ class AdminController {
             return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Get Commission Details Successfully.", commissionDetails[0]);
         }
         catch (error) {
+            return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, message_1.INTERNAL_SERVER_ERROR, error);
+        }
+    }
+    // add edit refer commission details
+    async addEditReferCommission(req, res) {
+        try {
+            const commissionDetails = req?.body;
+            console.log('commissionDetails', commissionDetails);
+            const addEditCommissionDetails = await data_source_1.default.getRepository(referCommission_entity_1.ReferCommission).save(commissionDetails);
+            return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Add Edit Refer Commission Details Successfully.", addEditCommissionDetails);
+        }
+        catch (error) {
+            console.log('error', error);
+            return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, message_1.INTERNAL_SERVER_ERROR, error);
+        }
+    }
+    // Get admin refer commission details
+    async getReferAdminCommission(req, res) {
+        try {
+            const commissionDetails = await data_source_1.default.getRepository(referCommission_entity_1.ReferCommission).find();
+            return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Get Refer Commission Details Successfully.", commissionDetails[0]);
+        }
+        catch (error) {
+            console.log('error', error);
             return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, message_1.INTERNAL_SERVER_ERROR, error);
         }
     }

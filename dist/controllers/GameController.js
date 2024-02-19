@@ -14,6 +14,7 @@ const gameStatus_1 = require("../constants/gameStatus");
 const gameTable_entity_1 = require("../entity/gameTable.entity");
 const adminCommission_entity_1 = require("../entity/adminCommission.entity");
 const socket_1 = require("../socket/socket");
+const gameUserResult_entity_1 = require("../entity/gameUserResult.entity");
 class GameController {
     async getGameCode(req, res) {
         try {
@@ -26,14 +27,14 @@ class GameController {
             }
             const getCommission = await data_source_1.default.getRepository(adminCommission_entity_1.AdminCommission).find();
             // origin data
-            // const options = {
-            //     method: 'GET',
-            //     url: 'https://ludoking-api-with-result.p.rapidapi.com/rapidapi/results/classic/',
-            //     headers: {
-            //         'X-RapidAPI-Key': 'cdb375f6ccmsh5c088e8ad7ca632p1e0041jsn2fe08856ffac',
-            //         'X-RapidAPI-Host': 'ludoking-api-with-result.p.rapidapi.com'
-            //     }
-            // };
+            const options = {
+                method: 'GET',
+                url: 'https://ludoking-api-with-result.p.rapidapi.com/rapidapi/results/classic/',
+                headers: {
+                    'X-RapidAPI-Key': 'cdb375f6ccmsh5c088e8ad7ca632p1e0041jsn2fe08856ffac',
+                    'X-RapidAPI-Host': 'ludoking-api-with-result.p.rapidapi.com'
+                }
+            };
             // testing data
             // const options = {
             //     method: 'GET',
@@ -43,19 +44,20 @@ class GameController {
             //         'X-RapidAPI-Host': 'ludoking-api-with-result.p.rapidapi.com'
             //     }
             // };
-            // const gameCodeAPIRes: any = await axios.request(options);
-            // if (!gameCodeAPIRes?.data['roomcode']) {
-            //     return errorResponse(res, StatusCodes.NOT_FOUND, 'Game Code Not Found');
-            // }
-            const gameCode = "09287844";
+            const gameCodeAPIRes = await axios_1.default.request(options);
+            if (!gameCodeAPIRes?.data['roomcode']) {
+                return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.NOT_FOUND, 'Game Code Not Found');
+            }
+            console.log('gameCodeAPIRes', gameCodeAPIRes);
+            // const gameCode = "09287844";
             // Calculate winner amount and owner commission amount
             const commissionPer = getCommission[0]?.commission || 2;
             const ownerCommission = ((Number(gameTableDetails?.amount) * 2) * commissionPer) / 100;
             const winnerAmount = (Number(gameTableDetails?.amount) * 2) - ownerCommission;
             const payload = {
                 user_id: userDetails?.id,
-                // game_code: gameCodeAPIRes?.data['roomcode'],
-                game_code: gameCode,
+                game_code: gameCodeAPIRes?.data['roomcode'],
+                // game_code: gameCode,
                 amount: gameTableDetails?.amount,
                 winner_amount: String(winnerAmount),
                 owner_commision: String(ownerCommission),
@@ -190,6 +192,102 @@ class GameController {
         }
         catch (error) {
             console.error(error);
+            return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, message_1.INTERNAL_SERVER_ERROR, error);
+        }
+    }
+    // user add win image photo in the API
+    async winGameResult(req, res) {
+        try {
+            const winPayload = req?.body;
+            const fileDataArray = req?.files;
+            if (fileDataArray?.length == 0) {
+                return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.NOT_FOUND, 'PLease Upload Image.');
+            }
+            const existingData = await data_source_1.default.getRepository(gameUserResult_entity_1.GameUserResult).findOne({
+                where: { game_table_id: Number(winPayload?.game_table_id) }
+            });
+            let savedDetails;
+            if (existingData) {
+                existingData['id'] = existingData?.id;
+                existingData['game_table_id'] = Number(winPayload?.game_table_id) || existingData['game_table_id'];
+                existingData['image'] = fileDataArray[0]?.filename || existingData['image'];
+                existingData['winner_user_id'] = req?.userId;
+                savedDetails = await data_source_1.default.getRepository(gameUserResult_entity_1.GameUserResult).save(existingData);
+            }
+            else {
+                const payload = {
+                    game_table_id: Number(winPayload?.game_table_id),
+                    image: fileDataArray[0]?.filename,
+                    winner_user_id: req?.userId
+                };
+                savedDetails = await data_source_1.default.getRepository(gameUserResult_entity_1.GameUserResult).save(payload);
+            }
+            return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Success", savedDetails);
+        }
+        catch (error) {
+            console.error('Win game result user can upload it : ', error);
+            return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, message_1.INTERNAL_SERVER_ERROR, error);
+        }
+    }
+    // user add loose game
+    async looseGameResult(req, res) {
+        try {
+            const loosePayload = req?.body;
+            console.log('loosePayload', loosePayload);
+            const existingData = await data_source_1.default.getRepository(gameUserResult_entity_1.GameUserResult).findOne({
+                where: { game_table_id: Number(loosePayload?.game_table_id) }
+            });
+            let savedDetails;
+            if (existingData) {
+                existingData['id'] = existingData?.id;
+                existingData['game_table_id'] = Number(loosePayload?.game_table_id) || existingData['game_table_id'];
+                existingData['loose_user_id'] = req?.userId;
+                savedDetails = await data_source_1.default.getRepository(gameUserResult_entity_1.GameUserResult).save(existingData);
+            }
+            else {
+                const payload = {
+                    game_table_id: Number(loosePayload?.game_table_id),
+                    loose_user_id: req?.userId
+                };
+                savedDetails = await data_source_1.default.getRepository(gameUserResult_entity_1.GameUserResult).save(payload);
+            }
+            return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Success", savedDetails);
+        }
+        catch (error) {
+            console.error('Win game result user can upload it : ', error);
+            return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, message_1.INTERNAL_SERVER_ERROR, error);
+        }
+    }
+    // user cancel the game
+    async cancelGame(req, res) {
+        try {
+            const cancelPayload = req?.body;
+            if (!cancelPayload?.cancel_reasone) {
+                return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.NOT_FOUND, 'PLease add reason.');
+            }
+            const existingData = await data_source_1.default.getRepository(gameUserResult_entity_1.GameUserResult).findOne({
+                where: { game_table_id: Number(cancelPayload?.game_table_id) }
+            });
+            let savedDetails;
+            if (existingData) {
+                existingData['id'] = existingData?.id;
+                existingData['game_table_id'] = Number(cancelPayload?.game_table_id) || existingData['game_table_id'];
+                existingData['cancel_user_id'] = req?.userId;
+                existingData['cancel_reasone'] = cancelPayload?.cancel_reasone || existingData['cancel_reasone'];
+                savedDetails = await data_source_1.default.getRepository(gameUserResult_entity_1.GameUserResult).save(existingData);
+            }
+            else {
+                const payload = {
+                    game_table_id: Number(cancelPayload?.game_table_id),
+                    cancel_user_id: req?.userId,
+                    cancel_reasone: cancelPayload?.cancel_reasone
+                };
+                savedDetails = await data_source_1.default.getRepository(gameUserResult_entity_1.GameUserResult).save(payload);
+            }
+            return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Success", savedDetails);
+        }
+        catch (error) {
+            console.error('Win game result user can upload it : ', error);
             return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, message_1.INTERNAL_SERVER_ERROR, error);
         }
     }

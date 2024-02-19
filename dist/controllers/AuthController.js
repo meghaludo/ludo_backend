@@ -12,6 +12,7 @@ const generateString_1 = require("../core/generateString");
 const data_source_1 = __importDefault(require("../data-source"));
 const user_entity_1 = require("../entity/user.entity");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const referUser_entiry_1 = require("../entity/referUser.entiry");
 class AuthController {
     // Login user
     async login(req, res) {
@@ -20,9 +21,15 @@ class AuthController {
             const emailLogin = await data_source_1.default.getRepository(user_entity_1.User).findOne({
                 where: { email: userName }
             });
+            if (emailLogin && emailLogin?.status != 1) {
+                return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.NOT_FOUND, 'User is Block Please contact To Administrator');
+            }
             const mobileLogin = await data_source_1.default.getRepository(user_entity_1.User).findOne({
                 where: { mobile_no: userName }
             });
+            if (mobileLogin && mobileLogin?.status != 1) {
+                return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.NOT_FOUND, 'User is Block Please contact To Administrator');
+            }
             if (!emailLogin && !mobileLogin) {
                 return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.NOT_FOUND, 'User Not Found Enter Valid UserName');
             }
@@ -44,6 +51,7 @@ class AuthController {
             }
         }
         catch (error) {
+            console.log('errror', error);
             return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, message_1.INTERNAL_SERVER_ERROR, error);
         }
     }
@@ -66,10 +74,27 @@ class AuthController {
                     return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.CONFLICT, "Mobile Number Already Exist");
                 }
             }
+            const enterUserData = {
+                full_name: userData?.full_name || null,
+                mobile_no: userData?.mobile_no || null,
+                email: userData?.email || null,
+                password: userData?.password || null,
+            };
             const cryptoPassword = (0, generateHashPassword_1.generateHashPassword)(userData['password']);
-            userData['password'] = cryptoPassword;
-            userData['refer_code'] = (0, generateString_1.generateRandomString)(7);
-            const userCreate = await data_source_1.default.getRepository(user_entity_1.User).save(userData);
+            enterUserData['password'] = cryptoPassword;
+            enterUserData['refer_code'] = (0, generateString_1.generateRandomString)(7);
+            const userCreate = await data_source_1.default.getRepository(user_entity_1.User).save(enterUserData);
+            if (!!userData?.code) {
+                const userWithCode = await data_source_1.default.getRepository(user_entity_1.User).findOne({
+                    where: { refer_code: userData['code'] }
+                });
+                const referTableData = {
+                    user_id: userCreate?.id,
+                    refrence_user_id: userWithCode?.id,
+                    code: userData['code']
+                };
+                await data_source_1.default.getRepository(referUser_entiry_1.ReferTable).save(referTableData);
+            }
             return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, 'Login Successfully', userCreate);
         }
         catch (error) {
