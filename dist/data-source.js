@@ -30,6 +30,6 @@ exports.AppDataSource = new typeorm_1.DataSource({
     entities: ["dist/entity/*.entity.js"],
     // entities: ["entity/*.entity.{ts,js}"],
     logging: true,
-    synchronize: false,
+    synchronize: true,
 });
 exports.default = exports.AppDataSource;

@@ -29,7 +29,7 @@ export const AppDataSource = new DataSource({
   entities: ["dist/entity/*.entity.js"],
   // entities: ["entity/*.entity.{ts,js}"],
   logging: true,
-  synchronize: false,
+  synchronize: true,
 });
 
 export default AppDataSource;
