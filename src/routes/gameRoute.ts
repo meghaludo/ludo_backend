@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { GameController } from '../controllers/GameController';
+import { upload } from "../core/multerConfig";
 
 const gameRoute = Router();
 const gameController = new GameController();
@@ -23,5 +24,10 @@ gameRoute.get('/get-admin-game-history', gameController.getGameHistoryAdmin);
 
 // get game result API  for testing
 gameRoute.post('/get-game-result', gameController.getGameResult);
+
+// after show game code user can add winning and verify game result
+gameRoute.post('/win-game',upload.array('file', 1), gameController.winGameResult); // For the win game
+gameRoute.post('/loose-game', gameController.looseGameResult); // for the loose the game 
+gameRoute.post('/cancel-game', gameController.cancelGame); // cancel game
 
 export default gameRoute;

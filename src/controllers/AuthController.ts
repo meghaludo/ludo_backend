@@ -6,6 +6,7 @@ import { generateRandomString } from "../core/generateString";
 import AppDataSource from "../data-source";
 import { User } from "../entity/user.entity";
 import jwt from 'jsonwebtoken';
+import { ReferTable } from "../entity/referUser.entiry";
 
 export class AuthController {
     // Login user
@@ -17,17 +18,25 @@ export class AuthController {
                 where: { email: userName }
             });
 
+            if (emailLogin && emailLogin?.status != 1) {
+                return errorResponse(res, StatusCodes.NOT_FOUND, 'User is Block Please contact To Administrator');
+            }
+
             const mobileLogin: any = await AppDataSource.getRepository(User).findOne({
                 where: { mobile_no: userName }
             });
+
+            if (mobileLogin && mobileLogin?.status != 1) {
+                return errorResponse(res, StatusCodes.NOT_FOUND, 'User is Block Please contact To Administrator');
+            }
 
             if (!emailLogin && !mobileLogin) {
                 return errorResponse(res, StatusCodes.NOT_FOUND, 'User Not Found Enter Valid UserName');
             }
 
-            if(mobileLogin) {
+            if (mobileLogin) {
                 const passwordMatch = await matchPassword(mobileLogin?.password, password);
-                
+
                 if (!passwordMatch) {
                     return errorResponse(res, StatusCodes.UNAUTHORIZED, 'Invalid Credentials');
                 }
@@ -37,9 +46,9 @@ export class AuthController {
                 return sendResponse(res, StatusCodes.OK, "User Login Successfully", mobileLogin, null, token);
             }
 
-            if(emailLogin) {
+            if (emailLogin) {
                 const passwordMatch = await matchPassword(emailLogin?.password, password);
-                
+
                 if (!passwordMatch) {
                     return errorResponse(res, StatusCodes.UNAUTHORIZED, 'Invalid Credentials');
                 }
@@ -49,6 +58,7 @@ export class AuthController {
                 return sendResponse(res, StatusCodes.OK, "User Login Successfully", emailLogin, null, token);
             }
         } catch (error) {
+            console.log('errror', error);
             return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
         }
     }
@@ -56,9 +66,9 @@ export class AuthController {
     // Register User
     public async register(req: any, res: any) {
         try {
-            const userData = req?.body;
+            const userData: any = req?.body;
 
-            if(!userData['email'] && !userData['mobile_no']) {
+            if (!userData['email'] && !userData['mobile_no']) {
                 return errorResponse(res, StatusCodes.NOT_FOUND, "Please Enter Mobile Number / Email.");
             }
 
@@ -82,11 +92,31 @@ export class AuthController {
                 }
             }
 
-            const cryptoPassword = generateHashPassword(userData['password']);
-            userData['password'] = cryptoPassword;
-            userData['refer_code'] = generateRandomString(7);
+            const enterUserData: any = {
+                full_name: userData?.full_name || null,
+                mobile_no: userData?.mobile_no || null,
+                email: userData?.email || null,
+                password: userData?.password || null,
+            }
 
-            const userCreate = await AppDataSource.getRepository(User).save(userData);
+            const cryptoPassword = generateHashPassword(userData['password']);
+            enterUserData['password'] = cryptoPassword;
+            enterUserData['refer_code'] = generateRandomString(7);
+
+            const userCreate = await AppDataSource.getRepository(User).save(enterUserData);
+
+            if (!!userData?.code) {
+                const userWithCode = await AppDataSource.getRepository(User).findOne({
+                    where: { refer_code: userData['code'] }
+                });
+
+                const referTableData = {
+                    user_id: userCreate?.id,
+                    refrence_user_id: userWithCode?.id,
+                    code: userData['code']
+                }
+                await AppDataSource.getRepository(ReferTable).save(referTableData);
+            }
 
             return sendResponse(res, StatusCodes.OK, 'Login Successfully', userCreate);
         } catch (error) {
@@ -95,7 +125,7 @@ export class AuthController {
     }
 
     // verify user name
-    public async verifyUserName(req:any, res:any) {
+    public async verifyUserName(req: any, res: any) {
         const { userName } = req?.body;
         try {
             const emailLogin: any = await AppDataSource.getRepository(User).findOne({
@@ -110,20 +140,20 @@ export class AuthController {
                 return errorResponse(res, StatusCodes.NOT_FOUND, 'User Not Found Enter Valid UserName');
             }
 
-            if(mobileLogin) {
+            if (mobileLogin) {
                 return sendResponse(res, StatusCodes.OK, "UserName Verify Successfully", mobileLogin);
             }
 
-            if(emailLogin) {
+            if (emailLogin) {
                 return sendResponse(res, StatusCodes.OK, "UserName Verify Successfully", emailLogin);
             }
         } catch (error) {
             return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
         }
-    }   
+    }
 
     // forgot Password
-    public async forgotPassword(req: any, res:any) {
+    public async forgotPassword(req: any, res: any) {
         const { userName, password } = req?.body;
         try {
             const emailLogin: any = await AppDataSource.getRepository(User).findOne({
@@ -135,18 +165,18 @@ export class AuthController {
             });
 
             if (!emailLogin && !mobileLogin) {
-                
+
                 return errorResponse(res, StatusCodes.NOT_FOUND, 'User Not Found Enter Valid UserName');
             }
 
-            if(mobileLogin) {
+            if (mobileLogin) {
                 const cryptoPassword = generateHashPassword(password);
                 mobileLogin['password'] = cryptoPassword;
                 const updateUserWithMobileNumber = await AppDataSource.getRepository(User).save(mobileLogin);
                 return sendResponse(res, StatusCodes.OK, "Password Updated", updateUserWithMobileNumber);
             }
 
-            if(emailLogin) {
+            if (emailLogin) {
                 const cryptoPassword = generateHashPassword(password);
                 emailLogin['password'] = cryptoPassword;
                 const updateUserWithEmail = await AppDataSource.getRepository(User).save(emailLogin);
@@ -163,37 +193,37 @@ export class AuthController {
 
         try {
             const emailLogin: any = await AppDataSource.getRepository(User).findOne({
-                where: { email: userName , role : 1 }
+                where: { email: userName, role: 1 }
             });
 
             const mobileLogin: any = await AppDataSource.getRepository(User).findOne({
-                where: { mobile_no: userName, role : 1 }
+                where: { mobile_no: userName, role: 1 }
             });
 
             if (!emailLogin && !mobileLogin) {
                 return errorResponse(res, StatusCodes.NOT_FOUND, 'User Not Found Enter Valid UserName');
             }
 
-            if(mobileLogin) {
+            if (mobileLogin) {
                 const passwordMatch = await matchPassword(mobileLogin?.password, password);
-                
+
                 if (!passwordMatch) {
                     return errorResponse(res, StatusCodes.UNAUTHORIZED, 'Invalid Credentials');
                 }
 
-                const token = jwt.sign({ userId: mobileLogin?.id, role : mobileLogin?.role }, "dHPaQEEL]Y]5X;HOAC[kF1DNF(9eC4vs", { expiresIn: '8h' });
+                const token = jwt.sign({ userId: mobileLogin?.id, role: mobileLogin?.role }, "dHPaQEEL]Y]5X;HOAC[kF1DNF(9eC4vs", { expiresIn: '8h' });
 
                 return sendResponse(res, StatusCodes.OK, "User Login Successfully", mobileLogin, null, token);
             }
 
-            if(emailLogin) {
+            if (emailLogin) {
                 const passwordMatch = await matchPassword(emailLogin?.password, password);
-                
+
                 if (!passwordMatch) {
                     return errorResponse(res, StatusCodes.UNAUTHORIZED, 'Invalid Credentials');
                 }
 
-                const token = jwt.sign({ userId: emailLogin?.id, role : emailLogin?.role}, "dHPaQEEL]Y]5X;HOAC[kF1DNF(9eC4vs", { expiresIn: '8h' });
+                const token = jwt.sign({ userId: emailLogin?.id, role: emailLogin?.role }, "dHPaQEEL]Y]5X;HOAC[kF1DNF(9eC4vs", { expiresIn: '8h' });
 
                 return sendResponse(res, StatusCodes.OK, "User Login Successfully", emailLogin, null, token);
             }

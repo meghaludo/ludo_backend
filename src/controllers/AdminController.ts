@@ -8,6 +8,7 @@ import { Withdraw } from "../entity/withdraw.entity";
 import { ContactUs } from "../entity/contactUs.entity";
 import { GameTable } from "../entity/gameTable.entity";
 import { AdminCommission } from "../entity/adminCommission.entity";
+import { ReferCommission } from "../entity/referCommission.entity";
 
 export class AdminController {
     public async updateAdmin(req: any, res: any) {
@@ -317,6 +318,32 @@ export class AdminController {
 
             return sendResponse(res, StatusCodes.OK, "Get Commission Details Successfully.", commissionDetails[0]);
         } catch (error) {
+            return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
+        }
+    }
+
+    // add edit refer commission details
+    public async addEditReferCommission(req: any, res: any) {
+        try {
+            const commissionDetails = req?.body;
+            console.log('commissionDetails', commissionDetails)
+            const addEditCommissionDetails = await AppDataSource.getRepository(ReferCommission).save(commissionDetails);
+
+            return sendResponse(res, StatusCodes.OK, "Add Edit Refer Commission Details Successfully.", addEditCommissionDetails);
+        } catch (error) {
+            console.log('error', error);
+            return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
+        }
+    }
+
+    // Get admin refer commission details
+    public async getReferAdminCommission(req: any, res: any) {
+        try {
+            const commissionDetails = await AppDataSource.getRepository(ReferCommission).find();
+
+            return sendResponse(res, StatusCodes.OK, "Get Refer Commission Details Successfully.", commissionDetails[0]);
+        } catch (error) {
+            console.log('error', error);
             return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
         }
     }
