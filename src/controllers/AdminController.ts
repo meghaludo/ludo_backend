@@ -13,7 +13,6 @@ import { ReferCommission } from "../entity/referCommission.entity";
 export class AdminController {
     public async updateAdmin(req: any, res: any) {
         try {
-            console.log('updateAdmin')
             const userDetails = req?.body;
 
             const existUser: any = await AppDataSource.getRepository(User).findOne({

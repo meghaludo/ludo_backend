@@ -5,3 +5,8 @@ export const LudoGameStatus = {
     Exit : 'Exit',
     Won : 'Won',
 }
+
+export const GameUserStatus = {
+    Created : 1,
+    Running : 2
+}

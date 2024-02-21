@@ -1,5 +1,6 @@
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { User } from "./user.entity";
+import { GameUserResult } from "./gameUserResult.entity";
 @Entity('game_table')
 export class GameTable {
     @PrimaryGeneratedColumn()
@@ -53,6 +54,9 @@ export class GameTable {
     @Column({ type: 'int', default : 1 })
     is_active!: number;
 
+    @Column({ type: 'int', default: 1 })
+    status!: number; // 1 : Created, 2: Requested, 3: Running, 4: Completed, 5: Cancel   
+
     @CreateDateColumn({ type: 'timestamp', precision: 6, default: () => 'CURRENT_TIMESTAMP(6)' })
     created_on!: Date;
 
@@ -63,4 +67,11 @@ export class GameTable {
     @ManyToOne(() => User)
     @JoinColumn({ name: "p2_id", referencedColumnName: "id" })
     playerTwo!: User;
+
+    @ManyToOne(() => User)
+    @JoinColumn({ name: "game_owner_id", referencedColumnName: "id" })
+    gameOwner!: User;
+
+    @OneToMany(() => GameUserResult, gameUserResult => gameUserResult.gameTable)
+    gameUserResults!: GameUserResult[];
 }
