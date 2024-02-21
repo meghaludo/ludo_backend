@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.GameTable = void 0;
 const typeorm_1 = require("typeorm");
 const user_entity_1 = require("./user.entity");
+const gameUserResult_entity_1 = require("./gameUserResult.entity");
 let GameTable = class GameTable {
     id;
     user_id;
@@ -30,9 +31,12 @@ let GameTable = class GameTable {
     is_running; // if 0 then waiting for player if 1 then running
     is_checked;
     is_active;
+    status; // 1 : Created, 2: Requested, 3: Running, 4: Completed, 5: Cancel   
     created_on;
     playerOne;
     playerTwo;
+    gameOwner;
+    gameUserResults;
 };
 exports.GameTable = GameTable;
 __decorate([
@@ -104,6 +108,10 @@ __decorate([
     __metadata("design:type", Number)
 ], GameTable.prototype, "is_active", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ type: 'int', default: 1 }),
+    __metadata("design:type", Number)
+], GameTable.prototype, "status", void 0);
+__decorate([
     (0, typeorm_1.CreateDateColumn)({ type: 'timestamp', precision: 6, default: () => 'CURRENT_TIMESTAMP(6)' }),
     __metadata("design:type", Date)
 ], GameTable.prototype, "created_on", void 0);
@@ -117,6 +125,15 @@ __decorate([
     (0, typeorm_1.JoinColumn)({ name: "p2_id", referencedColumnName: "id" }),
     __metadata("design:type", user_entity_1.User)
 ], GameTable.prototype, "playerTwo", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => user_entity_1.User),
+    (0, typeorm_1.JoinColumn)({ name: "game_owner_id", referencedColumnName: "id" }),
+    __metadata("design:type", user_entity_1.User)
+], GameTable.prototype, "gameOwner", void 0);
+__decorate([
+    (0, typeorm_1.OneToMany)(() => gameUserResult_entity_1.GameUserResult, gameUserResult => gameUserResult.gameTable),
+    __metadata("design:type", Array)
+], GameTable.prototype, "gameUserResults", void 0);
 exports.GameTable = GameTable = __decorate([
     (0, typeorm_1.Entity)('game_table')
 ], GameTable);

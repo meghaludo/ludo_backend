@@ -18,7 +18,6 @@ const referCommission_entity_1 = require("../entity/referCommission.entity");
 class AdminController {
     async updateAdmin(req, res) {
         try {
-            console.log('updateAdmin');
             const userDetails = req?.body;
             const existUser = await data_source_1.default.getRepository(user_entity_1.User).findOne({
                 where: { id: userDetails?.id }

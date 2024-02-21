@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.GameUserResult = void 0;
 const typeorm_1 = require("typeorm");
+const gameTable_entity_1 = require("./gameTable.entity");
 let GameUserResult = class GameUserResult {
     id;
     game_table_id;
@@ -21,6 +22,7 @@ let GameUserResult = class GameUserResult {
     cancel_reasone;
     admin_verify;
     created_on;
+    gameTable;
 };
 exports.GameUserResult = GameUserResult;
 __decorate([
@@ -59,6 +61,11 @@ __decorate([
     (0, typeorm_1.CreateDateColumn)({ type: 'timestamp', precision: 6, default: () => 'CURRENT_TIMESTAMP(6)' }),
     __metadata("design:type", Date)
 ], GameUserResult.prototype, "created_on", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => gameTable_entity_1.GameTable, gameTable => gameTable.gameUserResults),
+    (0, typeorm_1.JoinColumn)({ name: "game_table_id", referencedColumnName: "id" }),
+    __metadata("design:type", gameTable_entity_1.GameTable)
+], GameUserResult.prototype, "gameTable", void 0);
 exports.GameUserResult = GameUserResult = __decorate([
     (0, typeorm_1.Entity)('game_user_result')
 ], GameUserResult);

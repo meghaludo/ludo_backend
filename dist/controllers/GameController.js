@@ -48,7 +48,6 @@ class GameController {
             if (!gameCodeAPIRes?.data['roomcode']) {
                 return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.NOT_FOUND, 'Game Code Not Found');
             }
-            console.log('gameCodeAPIRes', gameCodeAPIRes);
             // const gameCode = "09287844";
             // Calculate winner amount and owner commission amount
             const commissionPer = getCommission[0]?.commission || 2;
@@ -62,9 +61,9 @@ class GameController {
                 winner_amount: String(winnerAmount),
                 owner_commision: String(ownerCommission),
                 game_owner_id: userDetails?.id,
-                p1_name: gameTableDetails?.name || userDetails?.ludo_name,
-                p1_status: gameStatus_1.LudoGameStatus.Waiting,
-                p1_id: userDetails?.id,
+                // p1_name: gameTableDetails?.name || userDetails?.ludo_name,
+                // p1_status: LudoGameStatus.Waiting,
+                // p1_id: userDetails?.id,
             };
             const createGameTable = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).save(payload);
             const io = (0, socket_1.getIO)();
@@ -106,9 +105,23 @@ class GameController {
     // get game list
     async getGameBattle(req, res) {
         try {
-            const gameHistory = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).find({
-                order: { id: 'DESC' }
+            const gameList = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).find({
+                order: { id: 'DESC' },
             });
+            const runningHistoryGame = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).find({
+                order: { id: 'DESC' },
+                where: [{ p1_id: req?.userId }, { p2_id: req?.userId }],
+            });
+            let runningHistory = [];
+            await runningHistoryGame.map((element) => {
+                if (element?.status == 2 || element?.status == 3) {
+                    runningHistory.push(element);
+                }
+            });
+            const gameHistory = {
+                runningGameList: runningHistory,
+                gameList: gameList
+            };
             return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Game History  List", gameHistory);
         }
         catch (error) {
@@ -139,6 +152,7 @@ class GameController {
             battleDetails['p2_id'] = playerDetails?.user_id || req?.userId;
             battleDetails['p2_status'] = gameStatus_1.LudoGameStatus.Running;
             battleDetails['p1_status'] = gameStatus_1.LudoGameStatus.Running;
+            // battleDetails['status'] = 2;
             battleDetails['is_running'] = 1;
             await data_source_1.default.getRepository(gameTable_entity_1.GameTable).save(battleDetails);
             const io = (0, socket_1.getIO)();
@@ -155,7 +169,8 @@ class GameController {
         const gameBattleId = Number(req.params.id);
         try {
             const getBattle = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).findOne({
-                where: { id: gameBattleId }
+                where: { id: gameBattleId },
+                relations: ['playerOne', 'playerTwo', 'gameOwner', 'gameUserResults']
             });
             if (!getBattle) {
                 return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.NOT_FOUND, 'Game Battle not found');
