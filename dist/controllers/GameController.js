@@ -148,12 +148,62 @@ class GameController {
             if (!battleDetails) {
                 return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.NOT_FOUND, 'Battle Not Found');
             }
-            battleDetails['p2_name'] = userDetails['ludo_name'] || playerDetails?.name;
-            battleDetails['p2_id'] = playerDetails?.user_id || req?.userId;
-            battleDetails['p2_status'] = gameStatus_1.LudoGameStatus.Running;
-            battleDetails['p1_status'] = gameStatus_1.LudoGameStatus.Running;
-            // battleDetails['status'] = 2;
-            battleDetails['is_running'] = 1;
+            console.log('battleDetails["p1_id"]', battleDetails['p1_id']);
+            if (battleDetails['p1_id']) {
+                battleDetails['p2_name'] = userDetails['ludo_name'] || playerDetails?.name;
+                battleDetails['p2_id'] = playerDetails?.user_id || req?.userId;
+                battleDetails['p2_status'] = gameStatus_1.LudoGameStatus.Running;
+                battleDetails['p1_status'] = gameStatus_1.LudoGameStatus.Running;
+                battleDetails['status'] = gameStatus_1.GameUserStatus.Running;
+                battleDetails['is_running'] = 1;
+                const player1battleList = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).find({
+                    where: { p1_id: req?.userId, status: gameStatus_1.GameUserStatus.Requested }
+                });
+                player1battleList?.map((element) => {
+                    element['p1_id'] = null;
+                    element['p1_status'] = null;
+                    element['p1_name'] = null;
+                    element['status'] = gameStatus_1.GameUserStatus.Created;
+                });
+                await data_source_1.default.getRepository(gameTable_entity_1.GameTable).save(player1battleList);
+                const player2battleList = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).find({
+                    where: { p2_id: req?.userId, status: gameStatus_1.GameUserStatus.Requested }
+                });
+                player2battleList?.map((element) => {
+                    element['p2_id'] = null;
+                    element['p2_status'] = null;
+                    element['p2_name'] = null;
+                    element['status'] = gameStatus_1.GameUserStatus.Created;
+                });
+                await data_source_1.default.getRepository(gameTable_entity_1.GameTable).save(player2battleList);
+                const player1battleListSecond = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).find({
+                    where: { p1_id: battleDetails['p1_id'], status: gameStatus_1.GameUserStatus.Requested }
+                });
+                player1battleListSecond?.map((element) => {
+                    element['p1_id'] = null;
+                    element['p1_status'] = null;
+                    element['p1_name'] = null;
+                    element['status'] = gameStatus_1.GameUserStatus.Created;
+                });
+                await data_source_1.default.getRepository(gameTable_entity_1.GameTable).save(player1battleListSecond);
+                const player2battleListSecond = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).find({
+                    where: { p2_id: battleDetails['p1_id'], status: gameStatus_1.GameUserStatus.Requested }
+                });
+                player2battleListSecond?.map((element) => {
+                    element['p2_id'] = null;
+                    element['p2_status'] = null;
+                    element['p2_name'] = null;
+                    element['status'] = gameStatus_1.GameUserStatus.Created;
+                });
+                await data_source_1.default.getRepository(gameTable_entity_1.GameTable).save(player2battleListSecond);
+            }
+            else {
+                battleDetails['p1_name'] = userDetails['ludo_name'] || playerDetails?.name;
+                battleDetails['p1_id'] = playerDetails?.user_id || req?.userId;
+                battleDetails['p1_status'] = gameStatus_1.LudoGameStatus.Waiting;
+                battleDetails['status'] = gameStatus_1.GameUserStatus.Requested;
+                battleDetails['is_running'] = 1;
+            }
             await data_source_1.default.getRepository(gameTable_entity_1.GameTable).save(battleDetails);
             const io = (0, socket_1.getIO)();
             io.emit('play_game', { title: 'Create Game' });

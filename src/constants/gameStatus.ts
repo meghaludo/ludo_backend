@@ -8,5 +8,8 @@ export const LudoGameStatus = {
 
 export const GameUserStatus = {
     Created : 1,
-    Running : 2
+    Requested : 2,
+    Running : 3,
+    Completed : 4,
+    Cancel : 5
 }

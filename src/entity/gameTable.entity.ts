@@ -25,22 +25,22 @@ export class GameTable {
     game_owner_id!: number;
 
     @Column({ type: 'varchar', length: 255, nullable: true })
-    p1_name!: string;
+    p1_name!: string | any;
 
     @Column({ type: 'varchar', length: 255, nullable: true })
-    p1_status!: string;
+    p1_status!: string | any;
 
     @Column({ type: 'int', nullable: true })
-    p1_id!: number;
+    p1_id!: number | any;
 
     @Column({ type: 'varchar', length: 255, nullable: true })
-    p2_name!: string;
+    p2_name!: string | any;
 
     @Column({ type: 'varchar', length: 255, nullable: true })
-    p2_status!: string;
+    p2_status!: string | any;
     
     @Column({ type: 'int', nullable: true })
-    p2_id!: number;
+    p2_id!: number | any;
 
     @Column({ type: 'int', nullable: true })
     game_result_id!: number;
