@@ -15,6 +15,7 @@ const gameTable_entity_1 = require("../entity/gameTable.entity");
 const adminCommission_entity_1 = require("../entity/adminCommission.entity");
 const socket_1 = require("../socket/socket");
 const gameUserResult_entity_1 = require("../entity/gameUserResult.entity");
+const gameCancelReasonMaster_entity_1 = require("../entity/gameCancelReasonMaster.entity");
 class GameController {
     async getGameCode(req, res) {
         try {
@@ -25,6 +26,9 @@ class GameController {
             if (!userDetails) {
                 return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.NOT_FOUND, 'User Not Found');
             }
+            // if(Number(gameTableDetails?.amount) > 50) {
+            //     return errorResponse(res, StatusCodes.UNAUTHORIZED, 'Please Enter Valid amount');
+            // }
             const getCommission = await data_source_1.default.getRepository(adminCommission_entity_1.AdminCommission).find();
             // origin data
             const options = {
@@ -105,16 +109,28 @@ class GameController {
     // get game list
     async getGameBattle(req, res) {
         try {
-            const gameList = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).find({
-                order: { id: 'DESC' },
-            });
-            const runningHistoryGame = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).find({
-                order: { id: 'DESC' },
-                where: [{ p1_id: req?.userId }, { p2_id: req?.userId }],
-            });
+            let gameQuery = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).createQueryBuilder('game_table');
+            if (req?.role != 1) {
+                gameQuery = gameQuery.andWhere(`game_table.status != :Status`, { Status: gameStatus_1.GameUserStatus?.Cancel });
+            }
+            gameQuery = gameQuery.orderBy(`game_table.id`, 'DESC');
+            const gameList = await gameQuery.getMany();
+            let runningHistoryGame = [];
+            let p2HistoryQuery = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).createQueryBuilder('game_table');
+            p2HistoryQuery = p2HistoryQuery.andWhere(`game_table.p1_id = :userId`, { userId: req?.userId });
+            p2HistoryQuery = p2HistoryQuery.andWhere(`game_table.p1_status != 'Completed'`);
+            const p2History = await p2HistoryQuery.getMany();
+            console.log('p2History', p2History);
+            let p1HistoryQuery = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).createQueryBuilder('game_table');
+            p1HistoryQuery = p1HistoryQuery.andWhere(`game_table.p2_id = :userId`, { userId: req?.userId });
+            p1HistoryQuery = p1HistoryQuery.andWhere(`game_table.p2_status != 'Completed'`);
+            const p1History = await p1HistoryQuery.getMany();
+            console.log('p1History', p1History);
+            runningHistoryGame = [...p1History, ...p2History];
             let runningHistory = [];
             await runningHistoryGame.map((element) => {
-                if (element?.status == 2 || element?.status == 3) {
+                const existingData = runningHistory?.find((el) => el.id === element.id);
+                if ((element?.status == 2 || element?.status == 3) && !existingData) {
                     runningHistory.push(element);
                 }
             });
@@ -269,7 +285,7 @@ class GameController {
                 return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.NOT_FOUND, 'PLease Upload Image.');
             }
             const existingData = await data_source_1.default.getRepository(gameUserResult_entity_1.GameUserResult).findOne({
-                where: { game_table_id: Number(winPayload?.game_table_id) }
+                where: { game_table_id: Number(winPayload?.game_table_id), admin_verify: 0 }
             });
             let savedDetails;
             if (existingData) {
@@ -287,6 +303,18 @@ class GameController {
                 };
                 savedDetails = await data_source_1.default.getRepository(gameUserResult_entity_1.GameUserResult).save(payload);
             }
+            if (Number(winPayload?.game_table_id)) {
+                let gameDetails = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).findOne({
+                    where: { id: winPayload?.game_table_id }
+                });
+                if (gameDetails && gameDetails['p1_id'] == req?.userId) {
+                    gameDetails['p1_status'] = 'Completed';
+                }
+                if (gameDetails && gameDetails['p2_id'] == req?.userId) {
+                    gameDetails['p2_status'] = 'Completed';
+                }
+                await data_source_1.default.getRepository(gameTable_entity_1.GameTable).save(gameDetails);
+            }
             return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Success", savedDetails);
         }
         catch (error) {
@@ -300,7 +328,7 @@ class GameController {
             const loosePayload = req?.body;
             console.log('loosePayload', loosePayload);
             const existingData = await data_source_1.default.getRepository(gameUserResult_entity_1.GameUserResult).findOne({
-                where: { game_table_id: Number(loosePayload?.game_table_id) }
+                where: { game_table_id: Number(loosePayload?.game_table_id), admin_verify: 0 }
             });
             let savedDetails;
             if (existingData) {
@@ -316,6 +344,18 @@ class GameController {
                 };
                 savedDetails = await data_source_1.default.getRepository(gameUserResult_entity_1.GameUserResult).save(payload);
             }
+            if (Number(loosePayload?.game_table_id)) {
+                let gameDetails = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).findOne({
+                    where: { id: loosePayload?.game_table_id }
+                });
+                if (gameDetails && gameDetails['p1_id'] == req?.userId) {
+                    gameDetails['p1_status'] = 'Completed';
+                }
+                if (gameDetails && gameDetails['p2_id'] == req?.userId) {
+                    gameDetails['p2_status'] = 'Completed';
+                }
+                await data_source_1.default.getRepository(gameTable_entity_1.GameTable).save(gameDetails);
+            }
             return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Success", savedDetails);
         }
         catch (error) {
@@ -328,10 +368,10 @@ class GameController {
         try {
             const cancelPayload = req?.body;
             if (!cancelPayload?.cancel_reasone) {
-                return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.NOT_FOUND, 'PLease add reason.');
+                return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.NOT_FOUND, 'PLease Select reason.');
             }
             const existingData = await data_source_1.default.getRepository(gameUserResult_entity_1.GameUserResult).findOne({
-                where: { game_table_id: Number(cancelPayload?.game_table_id) }
+                where: { game_table_id: Number(cancelPayload?.game_table_id), admin_verify: 0 }
             });
             let savedDetails;
             if (existingData) {
@@ -339,17 +379,47 @@ class GameController {
                 existingData['game_table_id'] = Number(cancelPayload?.game_table_id) || existingData['game_table_id'];
                 existingData['cancel_user_id'] = req?.userId;
                 existingData['cancel_reasone'] = cancelPayload?.cancel_reasone || existingData['cancel_reasone'];
+                existingData['admin_verify'] = 1;
                 savedDetails = await data_source_1.default.getRepository(gameUserResult_entity_1.GameUserResult).save(existingData);
             }
             else {
                 const payload = {
                     game_table_id: Number(cancelPayload?.game_table_id),
                     cancel_user_id: req?.userId,
-                    cancel_reasone: cancelPayload?.cancel_reasone
+                    cancel_reasone: cancelPayload?.cancel_reasone,
+                    admin_verify: 1
                 };
                 savedDetails = await data_source_1.default.getRepository(gameUserResult_entity_1.GameUserResult).save(payload);
             }
+            if (Number(cancelPayload?.game_table_id)) {
+                let gameDetails = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).findOne({
+                    where: { id: cancelPayload?.game_table_id }
+                });
+                if (gameDetails) {
+                    // gameDetails['p1_id'] = null;
+                    // gameDetails['p1_status'] = null;
+                    // gameDetails['p1_name'] = null;
+                    // gameDetails['p2_id'] = null;
+                    // gameDetails['p3_status'] = null;
+                    // gameDetails['p3_name'] = null; 
+                    gameDetails['status'] = gameStatus_1.GameUserStatus?.Cancel;
+                }
+                await data_source_1.default.getRepository(gameTable_entity_1.GameTable).save(gameDetails);
+            }
+            const io = (0, socket_1.getIO)();
+            io.emit('create_battle', { title: 'Create Game' });
             return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Success", savedDetails);
+        }
+        catch (error) {
+            console.error('Win game result user can upload it : ', error);
+            return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, message_1.INTERNAL_SERVER_ERROR, error);
+        }
+    }
+    //  game cancel reason
+    async cancelReasonList(req, res) {
+        try {
+            const reasonList = await data_source_1.default.getRepository(gameCancelReasonMaster_entity_1.ReasonMaster).find();
+            return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Successfully Get Reason List", reasonList);
         }
         catch (error) {
             console.error('Win game result user can upload it : ', error);

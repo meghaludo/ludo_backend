@@ -88,12 +88,14 @@ class AuthController {
                 const userWithCode = await data_source_1.default.getRepository(user_entity_1.User).findOne({
                     where: { refer_code: userData['code'] }
                 });
-                const referTableData = {
-                    user_id: userCreate?.id,
-                    refrence_user_id: userWithCode?.id,
-                    code: userData['code']
-                };
-                await data_source_1.default.getRepository(referUser_entiry_1.ReferTable).save(referTableData);
+                if (userWithCode) {
+                    const referTableData = {
+                        user_id: userCreate?.id,
+                        refrence_user_id: userWithCode?.id,
+                        code: userData['code']
+                    };
+                    await data_source_1.default.getRepository(referUser_entiry_1.ReferTable).save(referTableData);
+                }
             }
             return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, 'Login Successfully', userCreate);
         }

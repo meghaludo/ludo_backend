@@ -110,12 +110,14 @@ export class AuthController {
                     where: { refer_code: userData['code'] }
                 });
 
-                const referTableData = {
-                    user_id: userCreate?.id,
-                    refrence_user_id: userWithCode?.id,
-                    code: userData['code']
+                if(userWithCode){
+                    const referTableData = {
+                        user_id: userCreate?.id,
+                        refrence_user_id: userWithCode?.id,
+                        code: userData['code']
+                    }
+                    await AppDataSource.getRepository(ReferTable).save(referTableData);
                 }
-                await AppDataSource.getRepository(ReferTable).save(referTableData);
             }
 
             return sendResponse(res, StatusCodes.OK, 'Login Successfully', userCreate);

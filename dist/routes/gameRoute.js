@@ -23,4 +23,5 @@ gameRoute.post('/get-game-result', gameController.getGameResult);
 gameRoute.post('/win-game', multerConfig_1.upload.array('file', 1), gameController.winGameResult); // For the win game
 gameRoute.post('/loose-game', gameController.looseGameResult); // for the loose the game 
 gameRoute.post('/cancel-game', gameController.cancelGame); // cancel game
+gameRoute.get('/cancel-reason-list', gameController.cancelReasonList); // cancel game
 exports.default = gameRoute;

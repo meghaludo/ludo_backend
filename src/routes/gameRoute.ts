@@ -30,4 +30,6 @@ gameRoute.post('/win-game',upload.array('file', 1), gameController.winGameResult
 gameRoute.post('/loose-game', gameController.looseGameResult); // for the loose the game 
 gameRoute.post('/cancel-game', gameController.cancelGame); // cancel game
 
+gameRoute.get('/cancel-reason-list', gameController.cancelReasonList); // cancel game
+
 export default gameRoute;
