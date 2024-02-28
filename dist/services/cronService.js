@@ -12,7 +12,7 @@ const ludoGameResult_entity_1 = require("../entity/ludoGameResult.entity");
 async function updateGameResult() {
     console.log('game result updated');
     const gameTableBattleList = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).find({
-        where: { is_checked: 0 }
+    // where: { is_checked: 0 }
     });
     const options = {
         method: 'GET',
@@ -58,7 +58,7 @@ async function updateGameResult() {
                     payload['id'] = existingLudoGameResult['id'];
                 }
                 const updatedData = await data_source_1.default.getRepository(ludoGameResult_entity_1.LudoGameResult).save(payload);
-                battle['is_checked'] = 1;
+                // battle['is_checked'] = 1
                 battle['game_result_id'] = updatedData?.id;
                 await data_source_1.default.getRepository(gameTable_entity_1.GameTable).save(battle);
             }

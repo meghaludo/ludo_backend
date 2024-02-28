@@ -1,18 +1,18 @@
+import { GamePlayer } from './../entity/gamePlayer.entity';
+import { StatusCodes } from "http-status-codes";
+import AppDataSource from "../data-source";
+import { User } from "../entity/user.entity";
+import { errorResponse, sendResponse } from "../utils/responseUtil";
+import { AdminCommission } from "../entity/adminCommission.entity";
 import axios from 'axios';
-import { StatusCodes } from 'http-status-codes';
-import { INTERNAL_SERVER_ERROR } from '../constants/message';
-import { errorResponse, sendResponse } from '../utils/responseUtil';
-import AppDataSource from '../data-source';
-import { User } from '../entity/user.entity';
-import { GameUserStatus, LudoGameStatus } from '../constants/gameStatus';
-import { GameTable } from '../entity/gameTable.entity';
-import { AdminCommission } from '../entity/adminCommission.entity';
-import { getIO } from '../socket/socket';
-import { GameUserResult } from '../entity/gameUserResult.entity';
-import { ReasonMaster } from '../entity/gameCancelReasonMaster.entity';
+import { GameTable } from "../entity/gameTable.entity";
+import { GameStatus, PlayerStatus } from "../constants/gameStatus";
+import { getIO } from "../socket/socket";
+import { INTERNAL_SERVER_ERROR } from "../constants/message";
 
 export class GameController {
-    public async getGameCode(req: any, res: any) {
+    // create game
+    public async createGame(req: any, res: any) {
         try {
             const gameTableDetails = req?.body
 
@@ -23,10 +23,6 @@ export class GameController {
             if (!userDetails) {
                 return errorResponse(res, StatusCodes.NOT_FOUND, 'User Not Found');
             }
-
-            // if(Number(gameTableDetails?.amount) > 50) {
-            //     return errorResponse(res, StatusCodes.UNAUTHORIZED, 'Please Enter Valid amount');
-            // }
 
             const getCommission = await AppDataSource.getRepository(AdminCommission).find();
 
@@ -59,26 +55,31 @@ export class GameController {
             // const gameCode = "09287844";
 
             // Calculate winner amount and owner commission amount
-            const commissionPer = getCommission[0]?.commission || 2;
+            const commissionPer = getCommission[0]?.commission || 0;
 
             const ownerCommission = ((Number(gameTableDetails?.amount) * 2) * commissionPer) / 100;
 
             const winnerAmount = (Number(gameTableDetails?.amount) * 2) - ownerCommission;
 
             const payload = {
-                user_id: userDetails?.id,
                 game_code: gameCodeAPIRes?.data['roomcode'],
-                // game_code: gameCode,
                 amount: gameTableDetails?.amount,
                 winner_amount: String(winnerAmount),
-                owner_commision: String(ownerCommission),
+                admin_commission: String(ownerCommission),
                 game_owner_id: userDetails?.id,
-                // p1_name: gameTableDetails?.name || userDetails?.ludo_name,
-                // p1_status: LudoGameStatus.Waiting,
-                // p1_id: userDetails?.id,
+                status: GameStatus.Created
             }
 
             const createGameTable = await AppDataSource.getRepository(GameTable).save(payload);
+
+            const playerPayload = {
+                game_table_id: createGameTable?.id,
+                p_id: userDetails?.id,
+                p_name: gameTableDetails?.name || userDetails?.ludo_name,
+                p_status: PlayerStatus.Created
+            }
+
+            await AppDataSource.getRepository(GamePlayer).save(playerPayload);
 
             const io = getIO();
             io.emit('create_battle', { title: 'Create Game' });
@@ -90,95 +91,37 @@ export class GameController {
         }
     }
 
-    // get Game result
-    public async getGameResult(req: any, res: any) {
-        const { gameCode } = req?.body;
-        console.log('get roome code', typeof gameCode);
-        // const axios = require('axios');
-        const options = {
-            method: 'GET',
-            url: 'https://ludoking-api-with-result.p.rapidapi.com/rapidapi/results/result/',
-            params: {
-                roomcode: String(gameCode) || '06467585',
-                type: 'classic'
-            },
-            headers: {
-                'X-RapidAPI-Key': 'cdb375f6ccmsh5c088e8ad7ca632p1e0041jsn2fe08856ffac',
-                'X-RapidAPI-Host': 'ludoking-api-with-result.p.rapidapi.com'
-            }
-        };
-
+    // cancel game (Delete game)
+    public async deleteGame(req: any, res: any) {
         try {
-            const response = await axios.request(options);
-            console.log(response.data);
-            return sendResponse(res, StatusCodes.OK, "Get Game Result", response.data);
-        } catch (error) {
-            console.error(error);
-            return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
-        }
-    }
+            const gameBattleId = Number(req.params.id);
 
-    // get game list
-    public async getGameBattle(req: any, res: any) {
-        try {
-            let gameQuery = await AppDataSource.getRepository(GameTable).createQueryBuilder('game_table');
-
-            if (req?.role != 1) {
-                gameQuery = gameQuery.andWhere(`game_table.status != :Status`, { Status: GameUserStatus?.Cancel });
+            if (!gameBattleId) {
+                return errorResponse(res, StatusCodes.NOT_FOUND, INTERNAL_SERVER_ERROR);
             }
-            gameQuery = gameQuery.orderBy(`game_table.id`, 'DESC');
 
-            const gameList = await gameQuery.getMany();
-
-            let runningHistoryGame: any[] = [];
-
-            let p2HistoryQuery = await AppDataSource.getRepository(GameTable).createQueryBuilder('game_table');
-
-            p2HistoryQuery = p2HistoryQuery.andWhere(`game_table.p1_id = :userId`, { userId: req?.userId });
-            p2HistoryQuery = p2HistoryQuery.andWhere(`game_table.p1_status != 'Completed'`);
-
-            const p2History = await p2HistoryQuery.getMany();
-            console.log('p2History', p2History);
-
-            let p1HistoryQuery = await AppDataSource.getRepository(GameTable).createQueryBuilder('game_table');
-
-            p1HistoryQuery = p1HistoryQuery.andWhere(`game_table.p2_id = :userId`, { userId: req?.userId });
-            p1HistoryQuery = p1HistoryQuery.andWhere(`game_table.p2_status != 'Completed'`);
-
-            const p1History = await p1HistoryQuery.getMany();
-            console.log('p1History', p1History);
-
-            runningHistoryGame = [...p1History, ...p2History]
-
-            let runningHistory: any = [];
-            await runningHistoryGame.map((element) => {
-                const existingData = runningHistory?.find((el: any) => el.id === element.id);
-
-                if ((element?.status == 2 || element?.status == 3) && !existingData) {
-                    runningHistory.push(element);
-                }
+            await AppDataSource.getRepository(GamePlayer).delete({
+                game_table_id: gameBattleId
             });
 
-            const gameHistory = {
-                runningGameList: runningHistory,
-                gameList: gameList
-            }
+            await AppDataSource.getRepository(GameTable).delete({
+                id: gameBattleId
+            });
 
-            return sendResponse(res, StatusCodes.OK, "Game History  List", gameHistory);
+            const io = getIO();
+            io.emit('create_battle', { title: 'Create Game' });
+
+            return sendResponse(res, StatusCodes.OK, "Get Table Created.", { id: gameBattleId });
         } catch (error) {
-            console.error(error);
-            return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
+            console.log('Error deleting game', error);
+            return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR);
         }
     }
 
-    // play game with another user
+    // click to play button
     public async playGame(req: any, res: any) {
         const playerDetails = req?.body;
         try {
-            const gameHistory = await AppDataSource.getRepository(GameTable).find({
-                order: { id: 'DESC' }
-            });
-
             const userDetails = await AppDataSource.getRepository(User).findOne({
                 where: { id: playerDetails?.user_id || req?.userId }
             });
@@ -195,79 +138,122 @@ export class GameController {
                 return errorResponse(res, StatusCodes.NOT_FOUND, 'Battle Not Found');
             }
 
-            console.log('battleDetails["p1_id"]', battleDetails['p1_id'])
-            if (battleDetails['p1_id']) {
-                battleDetails['p2_name'] = userDetails['ludo_name'] || playerDetails?.name;
-                battleDetails['p2_id'] = playerDetails?.user_id || req?.userId;
-                battleDetails['p2_status'] = LudoGameStatus.Running;
-                battleDetails['p1_status'] = LudoGameStatus.Running;
-                battleDetails['status'] = GameUserStatus.Running;
-                battleDetails['is_running'] = 1;
+            battleDetails['status'] = GameStatus.Requested
 
+            const gameDetails = await AppDataSource.getRepository(GameTable).save(battleDetails);
 
-                const player1battleList = await AppDataSource.getRepository(GameTable).find({
-                    where: { p1_id: req?.userId, status: GameUserStatus.Requested }
-                });
-                player1battleList?.map((element: any) => {
-                    element['p1_id'] = null;
-                    element['p1_status'] = null;
-                    element['p1_name'] = null;
-                    element['status'] = GameUserStatus.Created;
-                });
-                await AppDataSource.getRepository(GameTable).save(player1battleList);
-
-
-                const player2battleList = await AppDataSource.getRepository(GameTable).find({
-                    where: { p2_id: req?.userId, status: GameUserStatus.Requested }
-                });
-                player2battleList?.map((element: any) => {
-                    element['p2_id'] = null;
-                    element['p2_status'] = null;
-                    element['p2_name'] = null;
-                    element['status'] = GameUserStatus.Created;
-                });
-                await AppDataSource.getRepository(GameTable).save(player2battleList);
-
-
-                const player1battleListSecond = await AppDataSource.getRepository(GameTable).find({
-                    where: { p1_id: battleDetails['p1_id'], status: GameUserStatus.Requested }
-                });
-                player1battleListSecond?.map((element: any) => {
-                    element['p1_id'] = null;
-                    element['p1_status'] = null;
-                    element['p1_name'] = null;
-                    element['status'] = GameUserStatus.Created;
-                });
-                await AppDataSource.getRepository(GameTable).save(player1battleListSecond);
-
-                const player2battleListSecond = await AppDataSource.getRepository(GameTable).find({
-                    where: { p2_id: battleDetails['p1_id'], status: GameUserStatus.Requested }
-                });
-                player2battleListSecond?.map((element: any) => {
-                    element['p2_id'] = null;
-                    element['p2_status'] = null;
-                    element['p2_name'] = null;
-                    element['status'] = GameUserStatus.Created;
-                });
-                await AppDataSource.getRepository(GameTable).save(player2battleListSecond);
-
-            } else {
-                battleDetails['p1_name'] = userDetails['ludo_name'] || playerDetails?.name;
-                battleDetails['p1_id'] = playerDetails?.user_id || req?.userId;
-                battleDetails['p1_status'] = LudoGameStatus.Waiting;
-                battleDetails['status'] = GameUserStatus.Requested;
-                battleDetails['is_running'] = 1;
+            const playerPayload = {
+                game_table_id: gameDetails?.id,
+                p_id: userDetails?.id,
+                p_name: playerDetails?.name || userDetails?.ludo_name,
+                p_status: PlayerStatus.Requested
             }
 
-            await AppDataSource.getRepository(GameTable).save(battleDetails);
+            await AppDataSource.getRepository(GamePlayer).save(playerPayload);
+
+            const playerList = await AppDataSource.getRepository(GamePlayer).find({
+                where: { game_table_id: gameDetails?.id }
+            });
+
+            playerList?.map((element) => {
+                element['p_status'] = PlayerStatus.Requested
+                AppDataSource.getRepository(GamePlayer).save(element);
+            });
 
             const io = getIO();
-            io.emit('play_game', { title: 'Create Game' });
+            io.emit('create_battle', { title: 'Create Game' });
 
-            return sendResponse(res, StatusCodes.OK, "Play Game SuccessFully", playerDetails);
+
+            // await AppDataSource.getRepository(GamePlayer).delete({
+            //     p_id: playerDetails?.user_id, p_status: PlayerStatus.Created
+            // });
+
+            // await AppDataSource.getRepository(GameTable).delete({
+            //     game_owner_id: playerDetails?.user_id, status: GameStatus.Created
+            // }); 
+
+            return sendResponse(res, StatusCodes.OK, "Game Played Successfully", gameDetails);
         } catch (error) {
-            console.error(error);
-            return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
+            console.log('Error play game', error);
+            return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // start game
+    public async startGame(req: any, res: any) {
+        const gameBattleId = Number(req.params.id);
+        try {
+            const gameDetails: any = await AppDataSource.getRepository(GameTable).findOne({
+                where: { id: gameBattleId }
+            });
+
+            if (!gameDetails) {
+                return errorResponse(res, StatusCodes.NOT_FOUND, 'Game Not Found');
+            }
+            gameDetails['status'] = GameStatus.Running;
+            await AppDataSource.getRepository(GameTable).save(gameDetails);
+
+            const playerList = await AppDataSource.getRepository(GamePlayer).find({
+                where: { game_table_id: gameBattleId }
+            });
+
+            await playerList?.map(async (element) => {
+                element['p_status'] = PlayerStatus.Running
+                await AppDataSource.getRepository(GamePlayer).save(element);
+
+                const gameList = await AppDataSource.getRepository(GamePlayer).find({
+                    where: { p_id: element['p_id'] }
+                });
+
+                await gameList?.map(async (game: any) => {
+                    if (game?.game_table_id != gameBattleId) {
+                        const data: any = await AppDataSource.getRepository(GameTable).findOne({
+                            where: { id: game?.game_table_id }
+                        });
+
+                        data['status'] = GameStatus.Created
+                        await AppDataSource.getRepository(GamePlayer).delete({
+                            id: game?.id
+                        });
+                        await AppDataSource.getRepository(GameTable).delete({
+                            id: game?.game_table_id
+                        });
+                    }
+                })
+            });
+
+            const io = getIO();
+            await io.emit('create_battle', { title: 'Create Game' });
+
+            return sendResponse(res, StatusCodes.OK, "Successfully", gameDetails);
+        } catch (error) {
+            console.log('Error Start game', error);
+            return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // get game list
+    public async gameList(req: any, res: any) {
+        try {
+            let gameQuery = await AppDataSource.getRepository(GameTable).createQueryBuilder('game_table');
+
+            if (req?.role != 1) {
+                gameQuery = gameQuery.andWhere(`game_table.status != :Status`, { Status: GameStatus?.Cancel });
+                gameQuery = gameQuery.andWhere(`game_table.status != :Status`, { Status: GameStatus?.Completed });
+            }
+
+            gameQuery = gameQuery.leftJoinAndSelect('game_table.gameOwner', 'users');
+            gameQuery = gameQuery.leftJoinAndSelect('game_table.gamePlayer', 'game_player');
+
+            gameQuery = gameQuery.orderBy(`game_table.id`, 'DESC');
+
+            const gameList = await gameQuery.getMany();
+
+            return sendResponse(res, StatusCodes.OK, "Game List Found Successfully", gameList);
+
+        } catch (error) {
+            console.log('Error Listing game', error);
+            return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -278,7 +264,7 @@ export class GameController {
 
             const getBattle = await AppDataSource.getRepository(GameTable).findOne({
                 where: { id: gameBattleId },
-                relations: ['playerOne', 'playerTwo', 'gameOwner', 'gameUserResults']
+                relations: ['gameOwner', 'gamePlayer']
             });
 
             if (!getBattle) {
@@ -288,211 +274,6 @@ export class GameController {
             return sendResponse(res, StatusCodes.OK, "Get Game Battle SuccessFully", getBattle);
         } catch (error) {
             console.error(error);
-            return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
-        }
-    }
-
-    //  get game history for particular user
-    public async getGameHistoryUser(req: any, res: any) {
-        try {
-            const gameHistory = await AppDataSource.getRepository(GameTable).find({
-                where: [{ p1_id: req?.userId }, { p2_id: req?.userId }, { is_running: 1 }, { is_running: 2 }],
-                relations: ['playerOne', 'playerTwo']
-            });
-
-            return sendResponse(res, StatusCodes.OK, "Get Game Battle  History Successfully.", gameHistory);
-        } catch (error) {
-            console.error(error);
-            return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
-        }
-    }
-
-    //  get game history for admin
-    public async getGameHistoryAdmin(req: any, res: any) {
-        try {
-            const gameHistory = await AppDataSource.getRepository(GameTable).find({
-                relations: ['playerOne', 'playerTwo'],
-                order: { id: 'DESC' }
-            });
-
-            return sendResponse(res, StatusCodes.OK, "Get Game Battle  History Successfully.", gameHistory);
-        } catch (error) {
-            console.error(error);
-            return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
-        }
-    }
-
-    // user add win image photo in the API
-    public async winGameResult(req: any, res: any) {
-        try {
-
-            const winPayload: any = req?.body;
-
-            const fileDataArray = req?.files;
-            if (fileDataArray?.length == 0) {
-                return errorResponse(res, StatusCodes.NOT_FOUND, 'PLease Upload Image.');
-            }
-
-            const existingData = await AppDataSource.getRepository(GameUserResult).findOne({
-                where: { game_table_id: Number(winPayload?.game_table_id), admin_verify: 0 }
-            });
-
-            let savedDetails: any;
-
-            if (existingData) {
-                existingData['id'] = existingData?.id;
-                existingData['game_table_id'] = Number(winPayload?.game_table_id) || existingData['game_table_id'];
-                existingData['image'] = fileDataArray[0]?.filename || existingData['image'];
-                existingData['winner_user_id'] = req?.userId;
-                savedDetails = await AppDataSource.getRepository(GameUserResult).save(existingData);
-            } else {
-                const payload: any = {
-                    game_table_id: Number(winPayload?.game_table_id),
-                    image: fileDataArray[0]?.filename,
-                    winner_user_id: req?.userId
-                }
-                savedDetails = await AppDataSource.getRepository(GameUserResult).save(payload);
-            }
-
-            if (Number(winPayload?.game_table_id)) {
-                let gameDetails: any = await AppDataSource.getRepository(GameTable).findOne({
-                    where: { id: winPayload?.game_table_id }
-                });
-
-                if (gameDetails && gameDetails['p1_id'] == req?.userId) {
-                    gameDetails['p1_status'] = 'Completed'
-                }
-
-                if (gameDetails && gameDetails['p2_id'] == req?.userId) {
-                    gameDetails['p2_status'] = 'Completed'
-                }
-
-                await AppDataSource.getRepository(GameTable).save(gameDetails);
-            }
-
-            return sendResponse(res, StatusCodes.OK, "Success", savedDetails);
-        } catch (error) {
-            console.error('Win game result user can upload it : ', error);
-            return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
-        }
-    }
-
-    // user add loose game
-    public async looseGameResult(req: any, res: any) {
-        try {
-            const loosePayload: any = req?.body;
-
-            console.log('loosePayload', loosePayload)
-            const existingData = await AppDataSource.getRepository(GameUserResult).findOne({
-                where: { game_table_id: Number(loosePayload?.game_table_id), admin_verify: 0 }
-            });
-
-            let savedDetails: any;
-
-            if (existingData) {
-                existingData['id'] = existingData?.id;
-                existingData['game_table_id'] = Number(loosePayload?.game_table_id) || existingData['game_table_id'];
-                existingData['loose_user_id'] = req?.userId;
-                savedDetails = await AppDataSource.getRepository(GameUserResult).save(existingData);
-            } else {
-                const payload: any = {
-                    game_table_id: Number(loosePayload?.game_table_id),
-                    loose_user_id: req?.userId
-                }
-                savedDetails = await AppDataSource.getRepository(GameUserResult).save(payload);
-            }
-
-            if (Number(loosePayload?.game_table_id)) {
-                let gameDetails: any = await AppDataSource.getRepository(GameTable).findOne({
-                    where: { id: loosePayload?.game_table_id }
-                });
-
-                if (gameDetails && gameDetails['p1_id'] == req?.userId) {
-                    gameDetails['p1_status'] = 'Completed'
-                }
-
-                if (gameDetails && gameDetails['p2_id'] == req?.userId) {
-                    gameDetails['p2_status'] = 'Completed'
-                }
-
-                await AppDataSource.getRepository(GameTable).save(gameDetails);
-            }
-
-            return sendResponse(res, StatusCodes.OK, "Success", savedDetails);
-        } catch (error) {
-            console.error('Win game result user can upload it : ', error);
-            return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
-        }
-    }
-
-    // user cancel the game
-    public async cancelGame(req: any, res: any) {
-        try {
-            const cancelPayload: any = req?.body;
-
-            if (!cancelPayload?.cancel_reasone) {
-                return errorResponse(res, StatusCodes.NOT_FOUND, 'PLease Select reason.');
-            }
-
-            const existingData = await AppDataSource.getRepository(GameUserResult).findOne({
-                where: { game_table_id: Number(cancelPayload?.game_table_id), admin_verify: 0 }
-            });
-
-            let savedDetails: any;
-
-            if (existingData) {
-                existingData['id'] = existingData?.id;
-                existingData['game_table_id'] = Number(cancelPayload?.game_table_id) || existingData['game_table_id'];
-                existingData['cancel_user_id'] = req?.userId;
-                existingData['cancel_reasone'] = cancelPayload?.cancel_reasone || existingData['cancel_reasone'];
-                existingData['admin_verify'] = 1;
-                savedDetails = await AppDataSource.getRepository(GameUserResult).save(existingData);
-            } else {
-                const payload: any = {
-                    game_table_id: Number(cancelPayload?.game_table_id),
-                    cancel_user_id: req?.userId,
-                    cancel_reasone: cancelPayload?.cancel_reasone,
-                    admin_verify: 1
-                }
-                savedDetails = await AppDataSource.getRepository(GameUserResult).save(payload);
-            }
-
-            if (Number(cancelPayload?.game_table_id)) {
-                let gameDetails: any = await AppDataSource.getRepository(GameTable).findOne({
-                    where: { id: cancelPayload?.game_table_id }
-                });
-
-                if (gameDetails) {
-                    // gameDetails['p1_id'] = null;
-                    // gameDetails['p1_status'] = null;
-                    // gameDetails['p1_name'] = null;
-                    // gameDetails['p2_id'] = null;
-                    // gameDetails['p3_status'] = null;
-                    // gameDetails['p3_name'] = null; 
-                    gameDetails['status'] = GameUserStatus?.Cancel;
-                }
-
-                await AppDataSource.getRepository(GameTable).save(gameDetails);
-            }
-
-            const io = getIO();
-            io.emit('create_battle', { title: 'Create Game' });
-
-            return sendResponse(res, StatusCodes.OK, "Success", savedDetails);
-        } catch (error) {
-            console.error('Win game result user can upload it : ', error);
-            return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
-        }
-    }
-
-    //  game cancel reason
-    public async cancelReasonList(req: any, res: any) {
-        try {
-            const reasonList = await AppDataSource.getRepository(ReasonMaster).find();
-
-            return sendResponse(res, StatusCodes.OK, "Successfully Get Reason List", reasonList);
-        } catch (error) {
-            console.error('Win game result user can upload it : ', error);
             return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
         }
     }

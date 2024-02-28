@@ -244,7 +244,7 @@ export class AdminController {
 
             // total play game  
             const gameList = await AppDataSource.getRepository(GameTable).find({
-                where: [{ is_running: 1 }, { is_running: 2 }]
+                // where: [{ is_running: 1 }, { is_running: 2 }]
             })
 
             const totalPlayGame = gameList?.length;
@@ -252,7 +252,7 @@ export class AdminController {
             let adminCommissionAmount = 0;
 
             gameList?.map((element) => {
-                adminCommissionAmount = Number(adminCommissionAmount) + Number(element?.owner_commision);
+                adminCommissionAmount = Number(adminCommissionAmount) + Number(element?.admin_commission);
             });
 
             // admin commission

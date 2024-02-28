@@ -8,7 +8,7 @@ export async function updateGameResult() {
     console.log('game result updated');
 
     const gameTableBattleList = await AppDataSource.getRepository(GameTable).find({
-        where: { is_checked: 0 }
+        // where: { is_checked: 0 }
     });
 
     const options = {
@@ -65,7 +65,7 @@ export async function updateGameResult() {
 
                 const updatedData = await AppDataSource.getRepository(LudoGameResult).save(payload);
 
-                battle['is_checked'] = 1
+                // battle['is_checked'] = 1
                 battle['game_result_id'] = updatedData?.id
 
                 await AppDataSource.getRepository(GameTable).save(battle);

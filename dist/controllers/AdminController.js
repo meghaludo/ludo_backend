@@ -203,12 +203,12 @@ class AdminController {
             });
             // total play game  
             const gameList = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).find({
-                where: [{ is_running: 1 }, { is_running: 2 }]
+            // where: [{ is_running: 1 }, { is_running: 2 }]
             });
             const totalPlayGame = gameList?.length;
             let adminCommissionAmount = 0;
             gameList?.map((element) => {
-                adminCommissionAmount = Number(adminCommissionAmount) + Number(element?.owner_commision);
+                adminCommissionAmount = Number(adminCommissionAmount) + Number(element?.admin_commission);
             });
             // admin commission
             const adminCommissionData = await data_source_1.default.getRepository(adminCommission_entity_1.AdminCommission).find();
