@@ -174,13 +174,14 @@ class GameController {
                         const data = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).findOne({
                             where: { id: game?.game_table_id }
                         });
-                        data['status'] = gameStatus_1.GameStatus.Created;
                         await data_source_1.default.getRepository(gamePlayer_entity_1.GamePlayer).delete({
                             id: game?.id
                         });
-                        await data_source_1.default.getRepository(gameTable_entity_1.GameTable).delete({
-                            id: game?.game_table_id
-                        });
+                        if (data['status'] !== gameStatus_1.GameStatus.Completed) {
+                            await data_source_1.default.getRepository(gameTable_entity_1.GameTable).delete({
+                                id: game?.game_table_id
+                            });
+                        }
                     }
                 });
             });
@@ -227,6 +228,72 @@ class GameController {
         }
         catch (error) {
             console.error(error);
+            return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, message_1.INTERNAL_SERVER_ERROR, error);
+        }
+    }
+    // user add win image photo in the API
+    async winGameResult(req, res) {
+        try {
+            const winPayload = req?.body;
+            const fileDataArray = req?.files;
+            if (fileDataArray?.length == 0) {
+                return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.NOT_FOUND, 'PLease Upload Image.');
+            }
+            const existingData = await data_source_1.default.getRepository(gamePlayer_entity_1.GamePlayer).findOne({
+                where: { game_table_id: Number(winPayload?.game_table_id), p_id: req?.userId }
+            });
+            console.log('existingData wiiner', existingData);
+            let savedDetails;
+            if (existingData) {
+                existingData['p_status'] = gameStatus_1.PlayerStatus.Winner;
+                existingData['image'] = fileDataArray[0]?.filename || existingData['image'];
+                savedDetails = await data_source_1.default.getRepository(gamePlayer_entity_1.GamePlayer).save(existingData);
+            }
+            const playerList = await data_source_1.default.getRepository(gamePlayer_entity_1.GamePlayer).find({
+                where: { game_table_id: Number(winPayload?.game_table_id) }
+            });
+            if ((playerList[0]?.p_status == gameStatus_1.PlayerStatus.Winner && playerList[1]?.p_status == gameStatus_1.PlayerStatus.Looser) || (playerList[0]?.p_status == gameStatus_1.PlayerStatus.Looser && playerList[1]?.p_status == gameStatus_1.PlayerStatus.Winner)) {
+                const gameDetails = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).findOne({
+                    where: { id: winPayload?.game_table_id }
+                });
+                gameDetails['status'] = gameStatus_1.GameStatus.Completed;
+                await data_source_1.default.getRepository(gameTable_entity_1.GameTable).save(gameDetails);
+            }
+            return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Successfully update", savedDetails);
+        }
+        catch (error) {
+            console.error('Win game result user can upload it : ', error);
+            return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, message_1.INTERNAL_SERVER_ERROR, error);
+        }
+    }
+    // user add loose game
+    async looseGameResult(req, res) {
+        try {
+            const loosePayload = req?.body;
+            // console.log('loosePayload', loosePayload)
+            const existingData = await data_source_1.default.getRepository(gamePlayer_entity_1.GamePlayer).findOne({
+                where: { game_table_id: Number(loosePayload?.game_table_id), p_id: req?.userId }
+            });
+            console.log('existingData looser', existingData);
+            let savedDetails;
+            if (existingData) {
+                existingData['p_status'] = gameStatus_1.PlayerStatus.Looser;
+                savedDetails = await data_source_1.default.getRepository(gamePlayer_entity_1.GamePlayer).save(existingData);
+            }
+            const playerList = await data_source_1.default.getRepository(gamePlayer_entity_1.GamePlayer).find({
+                where: { game_table_id: Number(loosePayload?.game_table_id) }
+            });
+            if ((playerList[0]?.p_status == gameStatus_1.PlayerStatus.Winner && playerList[1]?.p_status == gameStatus_1.PlayerStatus.Looser) || (playerList[0]?.p_status == gameStatus_1.PlayerStatus.Looser && playerList[1]?.p_status == gameStatus_1.PlayerStatus.Winner)) {
+                const gameDetails = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).findOne({
+                    where: { id: loosePayload?.game_table_id }
+                });
+                gameDetails['status'] = gameStatus_1.GameStatus.Completed;
+                await data_source_1.default.getRepository(gameTable_entity_1.GameTable).save(gameDetails);
+            }
+            return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Successfully updated", savedDetails);
+        }
+        catch (error) {
+            console.error('loose game result user can upload it : ', error);
             return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, message_1.INTERNAL_SERVER_ERROR, error);
         }
     }

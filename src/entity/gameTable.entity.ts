@@ -1,6 +1,7 @@
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { User } from "./user.entity";
 import { GamePlayer } from "./gamePlayer.entity";
+// import { GameUserResult } from "./gameUserResult.entity";
 @Entity('game_table')
 export class GameTable {
     @PrimaryGeneratedColumn()

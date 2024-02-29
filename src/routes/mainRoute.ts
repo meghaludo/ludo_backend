@@ -19,7 +19,7 @@ mainRoutes.use('/admin/auth', adminAuthRoutes);
 mainRoutes.use('/admin', verifyToken, adminRoute);
 
 // Game APIs
-// mainRoutes.use("/game", verifyToken, gameRoute);
-mainRoutes.use("/game", gameRoute);
+mainRoutes.use("/game", verifyToken, gameRoute);
+// mainRoutes.use("/game", gameRoute);
 
 export default mainRoutes;

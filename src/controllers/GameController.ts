@@ -207,17 +207,20 @@ export class GameController {
 
                 await gameList?.map(async (game: any) => {
                     if (game?.game_table_id != gameBattleId) {
+
                         const data: any = await AppDataSource.getRepository(GameTable).findOne({
                             where: { id: game?.game_table_id }
                         });
 
-                        data['status'] = GameStatus.Created
+
                         await AppDataSource.getRepository(GamePlayer).delete({
                             id: game?.id
                         });
-                        await AppDataSource.getRepository(GameTable).delete({
-                            id: game?.game_table_id
-                        });
+                        if (data['status'] !== GameStatus.Completed) {
+                            await AppDataSource.getRepository(GameTable).delete({
+                                id: game?.game_table_id
+                            });
+                        }
                     }
                 })
             });
@@ -274,6 +277,91 @@ export class GameController {
             return sendResponse(res, StatusCodes.OK, "Get Game Battle SuccessFully", getBattle);
         } catch (error) {
             console.error(error);
+            return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
+        }
+    }
+
+    // user add win image photo in the API
+    public async winGameResult(req: any, res: any) {
+        try {
+            const winPayload: any = req?.body;
+
+            const fileDataArray = req?.files;
+            if (fileDataArray?.length == 0) {
+                return errorResponse(res, StatusCodes.NOT_FOUND, 'PLease Upload Image.');
+            }
+
+            const existingData = await AppDataSource.getRepository(GamePlayer).findOne({
+                where: { game_table_id: Number(winPayload?.game_table_id), p_id: req?.userId }
+            });
+
+            console.log('existingData wiiner', existingData);
+
+            let savedDetails: any;
+
+            if (existingData) {
+                existingData['p_status'] = PlayerStatus.Winner;
+                existingData['image'] = fileDataArray[0]?.filename || existingData['image'];
+                savedDetails = await AppDataSource.getRepository(GamePlayer).save(existingData);
+            }
+
+            const playerList = await AppDataSource.getRepository(GamePlayer).find({
+                where: { game_table_id: Number(winPayload?.game_table_id) }
+            });
+
+            if ((playerList[0]?.p_status == PlayerStatus.Winner && playerList[1]?.p_status == PlayerStatus.Looser) || (playerList[0]?.p_status == PlayerStatus.Looser && playerList[1]?.p_status == PlayerStatus.Winner)) {
+                const gameDetails: any = await AppDataSource.getRepository(GameTable).findOne({
+                    where: { id: winPayload?.game_table_id }
+                });
+
+                gameDetails['status'] = GameStatus.Completed;
+
+                await AppDataSource.getRepository(GameTable).save(gameDetails);
+            }
+
+            return sendResponse(res, StatusCodes.OK, "Successfully update", savedDetails);
+        } catch (error) {
+            console.error('Win game result user can upload it : ', error);
+            return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
+        }
+    }
+
+    // user add loose game
+    public async looseGameResult(req: any, res: any) {
+        try {
+            const loosePayload: any = req?.body;
+
+            // console.log('loosePayload', loosePayload)
+            const existingData = await AppDataSource.getRepository(GamePlayer).findOne({
+                where: { game_table_id: Number(loosePayload?.game_table_id), p_id: req?.userId }
+            });
+
+            console.log('existingData looser', existingData);
+
+            let savedDetails: any;
+
+            if (existingData) {
+                existingData['p_status'] = PlayerStatus.Looser
+                savedDetails = await AppDataSource.getRepository(GamePlayer).save(existingData);
+            }
+
+            const playerList = await AppDataSource.getRepository(GamePlayer).find({
+                where: { game_table_id: Number(loosePayload?.game_table_id) }
+            });
+
+            if ((playerList[0]?.p_status == PlayerStatus.Winner && playerList[1]?.p_status == PlayerStatus.Looser) || (playerList[0]?.p_status == PlayerStatus.Looser && playerList[1]?.p_status == PlayerStatus.Winner)) {
+                const gameDetails: any = await AppDataSource.getRepository(GameTable).findOne({
+                    where: { id: loosePayload?.game_table_id }
+                });
+
+                gameDetails['status'] = GameStatus.Completed;
+
+                await AppDataSource.getRepository(GameTable).save(gameDetails);
+            }
+
+            return sendResponse(res, StatusCodes.OK, "Successfully updated", savedDetails);
+        } catch (error) {
+            console.error('loose game result user can upload it : ', error);
             return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
         }
     }

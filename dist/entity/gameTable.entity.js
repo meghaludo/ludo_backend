@@ -13,6 +13,7 @@ exports.GameTable = void 0;
 const typeorm_1 = require("typeorm");
 const user_entity_1 = require("./user.entity");
 const gamePlayer_entity_1 = require("./gamePlayer.entity");
+// import { GameUserResult } from "./gameUserResult.entity";
 let GameTable = class GameTable {
     id;
     // @Column({ type: 'int', nullable: true })
