@@ -6,6 +6,7 @@ import adminAuthRoutes from "./adminAuthRoute";
 import adminRoute from "./adminRoute";
 import userCommonRoute from "./userCommonRoute";
 import gameRoute from "./gameRoute";
+import notificationRoute from "./notificaionRoute";
 
 const mainRoutes = Router();
 
@@ -21,5 +22,6 @@ mainRoutes.use('/admin', verifyToken, adminRoute);
 // Game APIs
 mainRoutes.use("/game", verifyToken, gameRoute);
 // mainRoutes.use("/game", gameRoute);
+mainRoutes.use("/notification", notificationRoute);
 
 export default mainRoutes;

@@ -11,6 +11,7 @@ const adminAuthRoute_1 = __importDefault(require("./adminAuthRoute"));
 const adminRoute_1 = __importDefault(require("./adminRoute"));
 const userCommonRoute_1 = __importDefault(require("./userCommonRoute"));
 const gameRoute_1 = __importDefault(require("./gameRoute"));
+const notificaionRoute_1 = __importDefault(require("./notificaionRoute"));
 const mainRoutes = (0, express_1.Router)();
 // Usr APIS
 mainRoutes.use('/user/auth', authRoute_1.default);
@@ -22,4 +23,5 @@ mainRoutes.use('/admin', tokenMiddleware_1.verifyToken, adminRoute_1.default);
 // Game APIs
 mainRoutes.use("/game", tokenMiddleware_1.verifyToken, gameRoute_1.default);
 // mainRoutes.use("/game", gameRoute);
+mainRoutes.use("/notification", notificaionRoute_1.default);
 exports.default = mainRoutes;

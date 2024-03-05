@@ -9,6 +9,7 @@ import { GameTable } from "../entity/gameTable.entity";
 import { GameStatus, PlayerStatus } from "../constants/gameStatus";
 import { getIO } from "../socket/socket";
 import { INTERNAL_SERVER_ERROR } from "../constants/message";
+import { ReasonMaster } from '../entity/gameCancelReasonMaster.entity';
 
 export class GameController {
     // create game
@@ -57,7 +58,8 @@ export class GameController {
             // Calculate winner amount and owner commission amount
             const commissionPer = getCommission[0]?.commission || 0;
 
-            const ownerCommission = ((Number(gameTableDetails?.amount) * 2) * commissionPer) / 100;
+            // const ownerCommission = ((Number(gameTableDetails?.amount) * 2) * commissionPer) / 100;
+            const ownerCommission = (Number(gameTableDetails?.amount) * commissionPer) / 100;
 
             const winnerAmount = (Number(gameTableDetails?.amount) * 2) - ownerCommission;
 
@@ -197,6 +199,18 @@ export class GameController {
                 where: { game_table_id: gameBattleId }
             });
 
+            await playerList?.map(async (player) => {
+                let userDetailsForAmount: any = await AppDataSource.getRepository(User).findOne({
+                    where: { id: Number(player?.p_id) }
+                });
+
+                const userAmount = Number(userDetailsForAmount['amount']) - Number(gameDetails['amount']);
+                userDetailsForAmount['amount'] = String(userAmount);
+
+                await AppDataSource.getRepository(User).save(userDetailsForAmount);
+            })
+
+            // remove other games
             await playerList?.map(async (element) => {
                 element['p_status'] = PlayerStatus.Running
                 await AppDataSource.getRepository(GamePlayer).save(element);
@@ -212,10 +226,11 @@ export class GameController {
                             where: { id: game?.game_table_id }
                         });
 
-
-                        await AppDataSource.getRepository(GamePlayer).delete({
-                            id: game?.id
-                        });
+                        if (game['p_status'] != 6 && game['p_status'] != 7) {
+                            await AppDataSource.getRepository(GamePlayer).delete({
+                                id: game?.id
+                            });
+                        }
                         if (data['status'] !== GameStatus.Completed) {
                             await AppDataSource.getRepository(GameTable).delete({
                                 id: game?.game_table_id
@@ -225,8 +240,10 @@ export class GameController {
                 })
             });
 
-            const io = getIO();
-            await io.emit('create_battle', { title: 'Create Game' });
+            setTimeout(() => {
+                const io = getIO();
+                io.emit('create_battle', { title: 'Create Game' });
+            }, 1000);
 
             return sendResponse(res, StatusCodes.OK, "Successfully", gameDetails);
         } catch (error) {
@@ -265,16 +282,15 @@ export class GameController {
         const gameBattleId = Number(req.params.id);
         try {
 
-            const getBattle = await AppDataSource.getRepository(GameTable).findOne({
-                where: { id: gameBattleId },
-                relations: ['gameOwner', 'gamePlayer']
-            });
+            let query = await AppDataSource.getRepository(GameTable).createQueryBuilder('game_table');
 
-            if (!getBattle) {
-                return errorResponse(res, StatusCodes.NOT_FOUND, 'Game Battle not found');
-            }
+            query = query.leftJoinAndSelect('game_table.gameOwner', 'users');
+            query = query.leftJoinAndSelect('game_table.gamePlayer', 'game_player');
+            query = query.leftJoinAndSelect('game_player.playerOne', 'owner')
 
-            return sendResponse(res, StatusCodes.OK, "Get Game Battle SuccessFully", getBattle);
+            const getBattle = await query.getMany();
+
+            return sendResponse(res, StatusCodes.OK, "Get Game Battle SuccessFully", getBattle[0]);
         } catch (error) {
             console.error(error);
             return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
@@ -362,6 +378,98 @@ export class GameController {
             return sendResponse(res, StatusCodes.OK, "Successfully updated", savedDetails);
         } catch (error) {
             console.error('loose game result user can upload it : ', error);
+            return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
+        }
+    }
+
+    //  get game history for particular user
+    public async getGameHistoryUser(req: any, res: any) {
+        try {
+            let gameQuery = await AppDataSource.getRepository(GamePlayer).createQueryBuilder('game_player');
+
+            gameQuery = gameQuery.andWhere('game_player.p_id = :playerId', { playerId: req?.userId });
+            gameQuery = gameQuery.andWhere(`game_player.p_status != :Status`, { Status: PlayerStatus.Created });
+            gameQuery = gameQuery.andWhere(`game_player.p_status != :Status`, { Status: PlayerStatus.Requested });
+            gameQuery = gameQuery.leftJoinAndSelect(`game_player.gameTable`, 'game_table');
+            gameQuery = gameQuery.leftJoinAndSelect(`game_player.playerOne`, 'users')
+
+            const gameHistory = await gameQuery.getMany();
+
+            return sendResponse(res, StatusCodes.OK, "Get Game Battle  History Successfully.", gameHistory);
+        } catch (error) {
+            console.error(error);
+            return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
+        }
+    }
+
+    // admin game history
+    public async adminGameHistory(req: any, res: any) {
+        try {
+            const gameList = await AppDataSource.getRepository(GameTable).find({
+                relations: ['gameOwner', 'gamePlayer']
+            });
+
+            return sendResponse(res, StatusCodes.OK, "Get Game Battle  History Successfully.", gameList);
+        } catch (error) {
+            console.error('Admin Game history error', error);
+            return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
+        }
+    }
+
+    //  game cancel reason
+    public async cancelReasonList(req: any, res: any) {
+        try {
+            const reasonList = await AppDataSource.getRepository(ReasonMaster).find();
+
+            return sendResponse(res, StatusCodes.OK, "Successfully Get Reason List", reasonList);
+        } catch (error) {
+            console.error('Win game result user can upload it : ', error);
+            return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
+        }
+    }
+
+    // cancel user list
+    public async cancelGame(req: any, res: any) {
+        try {
+            const cancelDetails = req?.body;
+
+            let gameTable : any = await AppDataSource.getRepository(GameTable).findOne({
+                where : { id : Number(cancelDetails?.game_table_id) }
+            });
+
+            gameTable['status'] = GameStatus.Cancel;
+            gameTable['cancel_user_id'] = req?.userId;
+            gameTable['cancel_reason'] = cancelDetails?.cancel_reasone;
+
+            const savedData = await AppDataSource.getRepository(GameTable).save(gameTable);
+
+            const playerList = await AppDataSource.getRepository(GamePlayer).find({
+                where : { game_table_id : Number(cancelDetails?.game_table_id) }
+            });
+
+            await playerList?.map(async (player) => {
+                player['p_status'] = PlayerStatus.Cancel;
+                await AppDataSource.getRepository(GamePlayer).save(player);
+
+                let userData : any = await AppDataSource.getRepository(User).findOne({
+                    where : { id : Number(player?.p_id) }
+                });
+                const amount = Number(userData['amount']) + Number(gameTable['amount']);
+                userData['amount'] = String(amount);
+
+                console.log('userData', userData);
+
+                await AppDataSource.getRepository(User).save(userData);
+            });  
+
+            setTimeout(() => {
+                const io = getIO();
+                io.emit('create_battle', { title: 'Create Game' });
+            }, 1000);
+            
+            return sendResponse(res, StatusCodes.OK, "Game Canceled.", savedData);
+        } catch (error) {
+            console.error('Win game result user can upload it : ', error);
             return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
         }
     }

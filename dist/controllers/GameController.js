@@ -15,6 +15,7 @@ const gameTable_entity_1 = require("../entity/gameTable.entity");
 const gameStatus_1 = require("../constants/gameStatus");
 const socket_1 = require("../socket/socket");
 const message_1 = require("../constants/message");
+const gameCancelReasonMaster_entity_1 = require("../entity/gameCancelReasonMaster.entity");
 class GameController {
     // create game
     async createGame(req, res) {
@@ -52,7 +53,8 @@ class GameController {
             // const gameCode = "09287844";
             // Calculate winner amount and owner commission amount
             const commissionPer = getCommission[0]?.commission || 0;
-            const ownerCommission = ((Number(gameTableDetails?.amount) * 2) * commissionPer) / 100;
+            // const ownerCommission = ((Number(gameTableDetails?.amount) * 2) * commissionPer) / 100;
+            const ownerCommission = (Number(gameTableDetails?.amount) * commissionPer) / 100;
             const winnerAmount = (Number(gameTableDetails?.amount) * 2) - ownerCommission;
             const payload = {
                 game_code: gameCodeAPIRes?.data['roomcode'],
@@ -163,6 +165,15 @@ class GameController {
             const playerList = await data_source_1.default.getRepository(gamePlayer_entity_1.GamePlayer).find({
                 where: { game_table_id: gameBattleId }
             });
+            await playerList?.map(async (player) => {
+                let userDetailsForAmount = await data_source_1.default.getRepository(user_entity_1.User).findOne({
+                    where: { id: Number(player?.p_id) }
+                });
+                const userAmount = Number(userDetailsForAmount['amount']) - Number(gameDetails['amount']);
+                userDetailsForAmount['amount'] = String(userAmount);
+                await data_source_1.default.getRepository(user_entity_1.User).save(userDetailsForAmount);
+            });
+            // remove other games
             await playerList?.map(async (element) => {
                 element['p_status'] = gameStatus_1.PlayerStatus.Running;
                 await data_source_1.default.getRepository(gamePlayer_entity_1.GamePlayer).save(element);
@@ -174,9 +185,11 @@ class GameController {
                         const data = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).findOne({
                             where: { id: game?.game_table_id }
                         });
-                        await data_source_1.default.getRepository(gamePlayer_entity_1.GamePlayer).delete({
-                            id: game?.id
-                        });
+                        if (game['p_status'] != 6 && game['p_status'] != 7) {
+                            await data_source_1.default.getRepository(gamePlayer_entity_1.GamePlayer).delete({
+                                id: game?.id
+                            });
+                        }
                         if (data['status'] !== gameStatus_1.GameStatus.Completed) {
                             await data_source_1.default.getRepository(gameTable_entity_1.GameTable).delete({
                                 id: game?.game_table_id
@@ -185,8 +198,10 @@ class GameController {
                     }
                 });
             });
-            const io = (0, socket_1.getIO)();
-            await io.emit('create_battle', { title: 'Create Game' });
+            setTimeout(() => {
+                const io = (0, socket_1.getIO)();
+                io.emit('create_battle', { title: 'Create Game' });
+            }, 1000);
             return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Successfully", gameDetails);
         }
         catch (error) {
@@ -217,14 +232,12 @@ class GameController {
     async getGameTable(req, res) {
         const gameBattleId = Number(req.params.id);
         try {
-            const getBattle = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).findOne({
-                where: { id: gameBattleId },
-                relations: ['gameOwner', 'gamePlayer']
-            });
-            if (!getBattle) {
-                return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.NOT_FOUND, 'Game Battle not found');
-            }
-            return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Get Game Battle SuccessFully", getBattle);
+            let query = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).createQueryBuilder('game_table');
+            query = query.leftJoinAndSelect('game_table.gameOwner', 'users');
+            query = query.leftJoinAndSelect('game_table.gamePlayer', 'game_player');
+            query = query.leftJoinAndSelect('game_player.playerOne', 'owner');
+            const getBattle = await query.getMany();
+            return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Get Game Battle SuccessFully", getBattle[0]);
         }
         catch (error) {
             console.error(error);
@@ -294,6 +307,83 @@ class GameController {
         }
         catch (error) {
             console.error('loose game result user can upload it : ', error);
+            return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, message_1.INTERNAL_SERVER_ERROR, error);
+        }
+    }
+    //  get game history for particular user
+    async getGameHistoryUser(req, res) {
+        try {
+            let gameQuery = await data_source_1.default.getRepository(gamePlayer_entity_1.GamePlayer).createQueryBuilder('game_player');
+            gameQuery = gameQuery.andWhere('game_player.p_id = :playerId', { playerId: req?.userId });
+            gameQuery = gameQuery.andWhere(`game_player.p_status != :Status`, { Status: gameStatus_1.PlayerStatus.Created });
+            gameQuery = gameQuery.andWhere(`game_player.p_status != :Status`, { Status: gameStatus_1.PlayerStatus.Requested });
+            gameQuery = gameQuery.leftJoinAndSelect(`game_player.gameTable`, 'game_table');
+            gameQuery = gameQuery.leftJoinAndSelect(`game_player.playerOne`, 'users');
+            const gameHistory = await gameQuery.getMany();
+            return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Get Game Battle  History Successfully.", gameHistory);
+        }
+        catch (error) {
+            console.error(error);
+            return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, message_1.INTERNAL_SERVER_ERROR, error);
+        }
+    }
+    // admin game history
+    async adminGameHistory(req, res) {
+        try {
+            const gameList = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).find({
+                relations: ['gameOwner', 'gamePlayer']
+            });
+            return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Get Game Battle  History Successfully.", gameList);
+        }
+        catch (error) {
+            console.error('Admin Game history error', error);
+            return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, message_1.INTERNAL_SERVER_ERROR, error);
+        }
+    }
+    //  game cancel reason
+    async cancelReasonList(req, res) {
+        try {
+            const reasonList = await data_source_1.default.getRepository(gameCancelReasonMaster_entity_1.ReasonMaster).find();
+            return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Successfully Get Reason List", reasonList);
+        }
+        catch (error) {
+            console.error('Win game result user can upload it : ', error);
+            return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, message_1.INTERNAL_SERVER_ERROR, error);
+        }
+    }
+    // cancel user list
+    async cancelGame(req, res) {
+        try {
+            const cancelDetails = req?.body;
+            let gameTable = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).findOne({
+                where: { id: Number(cancelDetails?.game_table_id) }
+            });
+            gameTable['status'] = gameStatus_1.GameStatus.Cancel;
+            gameTable['cancel_user_id'] = req?.userId;
+            gameTable['cancel_reason'] = cancelDetails?.cancel_reasone;
+            const savedData = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).save(gameTable);
+            const playerList = await data_source_1.default.getRepository(gamePlayer_entity_1.GamePlayer).find({
+                where: { game_table_id: Number(cancelDetails?.game_table_id) }
+            });
+            await playerList?.map(async (player) => {
+                player['p_status'] = gameStatus_1.PlayerStatus.Cancel;
+                await data_source_1.default.getRepository(gamePlayer_entity_1.GamePlayer).save(player);
+                let userData = await data_source_1.default.getRepository(user_entity_1.User).findOne({
+                    where: { id: Number(player?.p_id) }
+                });
+                const amount = Number(userData['amount']) + Number(gameTable['amount']);
+                userData['amount'] = String(amount);
+                console.log('userData', userData);
+                await data_source_1.default.getRepository(user_entity_1.User).save(userData);
+            });
+            setTimeout(() => {
+                const io = (0, socket_1.getIO)();
+                io.emit('create_battle', { title: 'Create Game' });
+            }, 1000);
+            return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Game Canceled.", savedData);
+        }
+        catch (error) {
+            console.error('Win game result user can upload it : ', error);
             return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, message_1.INTERNAL_SERVER_ERROR, error);
         }
     }
