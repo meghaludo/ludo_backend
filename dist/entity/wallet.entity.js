@@ -16,6 +16,7 @@ let UserWallet = class UserWallet {
     id;
     user_id;
     amount;
+    order_id;
     status; // 0: pending, 1: verify, 2: decline
     created_on;
     userDetail;
@@ -33,6 +34,10 @@ __decorate([
     (0, typeorm_1.Column)({ type: 'varchar', length: 500, nullable: false }),
     __metadata("design:type", String)
 ], UserWallet.prototype, "amount", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', length: 255, nullable: true }),
+    __metadata("design:type", String)
+], UserWallet.prototype, "order_id", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'int', default: 0, nullable: false }),
     __metadata("design:type", Number)

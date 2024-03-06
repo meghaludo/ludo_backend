@@ -11,6 +11,9 @@ authRoutes.post('/register', authController.register);
 authRoutes.post('/login', authController.login);
 
 // User Login functionality  
+authRoutes.post('/verify-otp', authController.verifyOTP);
+
+// User Login functionality  
 authRoutes.post('/admin-login', authController.adminLogin);
 
 // Verify username
