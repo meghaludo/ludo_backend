@@ -10,12 +10,12 @@ const data_source_1 = __importDefault(require("../data-source"));
 const user_entity_1 = require("../entity/user.entity");
 const responseUtil_1 = require("../utils/responseUtil");
 const adminCommission_entity_1 = require("../entity/adminCommission.entity");
-const axios_1 = __importDefault(require("axios"));
 const gameTable_entity_1 = require("../entity/gameTable.entity");
 const gameStatus_1 = require("../constants/gameStatus");
 const socket_1 = require("../socket/socket");
 const message_1 = require("../constants/message");
 const gameCancelReasonMaster_entity_1 = require("../entity/gameCancelReasonMaster.entity");
+const referCommission_entity_1 = require("../entity/referCommission.entity");
 class GameController {
     // create game
     async createGame(req, res) {
@@ -29,27 +29,18 @@ class GameController {
             }
             const getCommission = await data_source_1.default.getRepository(adminCommission_entity_1.AdminCommission).find();
             // origin data
-            const options = {
-                method: 'GET',
-                url: 'https://ludoking-api-with-result.p.rapidapi.com/rapidapi/results/classic/',
-                headers: {
-                    'X-RapidAPI-Key': 'cdb375f6ccmsh5c088e8ad7ca632p1e0041jsn2fe08856ffac',
-                    'X-RapidAPI-Host': 'ludoking-api-with-result.p.rapidapi.com'
-                }
-            };
-            // testing data
             // const options = {
             //     method: 'GET',
             //     url: 'https://ludoking-api-with-result.p.rapidapi.com/rapidapi/results/classic/',
             //     headers: {
-            //         'X-RapidAPI-Key': 'asasascdb375f6ccmsh5c088e8ad7ca632p1e0041jsn2fe08856ffac',
+            //         'X-RapidAPI-Key': 'cdb375f6ccmsh5c088e8ad7ca632p1e0041jsn2fe08856ffac',
             //         'X-RapidAPI-Host': 'ludoking-api-with-result.p.rapidapi.com'
             //     }
             // };
-            const gameCodeAPIRes = await axios_1.default.request(options);
-            if (!gameCodeAPIRes?.data['roomcode']) {
-                return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.NOT_FOUND, 'Game Code Not Found');
-            }
+            // const gameCodeAPIRes: any = await axios.request(options);
+            // if (!gameCodeAPIRes?.data['roomcode']) {
+            //     return errorResponse(res, StatusCodes.NOT_FOUND, 'Game Code Not Found');
+            // }
             // const gameCode = "09287844";
             // Calculate winner amount and owner commission amount
             const commissionPer = getCommission[0]?.commission || 0;
@@ -57,7 +48,6 @@ class GameController {
             const ownerCommission = (Number(gameTableDetails?.amount) * commissionPer) / 100;
             const winnerAmount = (Number(gameTableDetails?.amount) * 2) - ownerCommission;
             const payload = {
-                game_code: gameCodeAPIRes?.data['roomcode'],
                 amount: gameTableDetails?.amount,
                 winner_amount: String(winnerAmount),
                 admin_commission: String(ownerCommission),
@@ -233,6 +223,7 @@ class GameController {
         const gameBattleId = Number(req.params.id);
         try {
             let query = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).createQueryBuilder('game_table');
+            query = query.andWhere(`game_table.id = :gameBattleId`, { gameBattleId: gameBattleId });
             query = query.leftJoinAndSelect('game_table.gameOwner', 'users');
             query = query.leftJoinAndSelect('game_table.gamePlayer', 'game_player');
             query = query.leftJoinAndSelect('game_player.playerOne', 'owner');
@@ -271,6 +262,37 @@ class GameController {
                 });
                 gameDetails['status'] = gameStatus_1.GameStatus.Completed;
                 await data_source_1.default.getRepository(gameTable_entity_1.GameTable).save(gameDetails);
+            }
+            const user = await data_source_1.default.getRepository(user_entity_1.User).findOne({
+                where: { id: req?.userId }
+            });
+            if (user && (user.reference_user_id != 0)) {
+                const gameDetail = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).findOne({
+                    where: { id: Number(winPayload?.game_table_id) }
+                });
+                const adminCommission = await data_source_1.default.getRepository(adminCommission_entity_1.AdminCommission).findOne({
+                    where: { is_active: 1 }
+                });
+                // if (!adminCommission?.commission) {
+                //     adminCommission['commission'] = 0;
+                // }
+                const adminCommissionRs = ((Number(gameDetail?.amount) * 2) * Number(adminCommission?.commission) || 0) / 100;
+                const referCommission = await data_source_1.default.getRepository(referCommission_entity_1.ReferCommission).findOne({
+                    where: { is_active: 1 }
+                });
+                // console.log('referCommissionreferCommission', referCommission)
+                // if (!referCommission?.commission) {
+                //     referCommission['commission'] = 0;
+                // }
+                // console.log('referCommissioncommission', referCommission['commission'])
+                const referCommissionRs = (Number(adminCommissionRs) * Number(referCommission?.commission) || 0) / 100;
+                console.log('user.reference_user_id', user.reference_user_id);
+                const referUser = await data_source_1.default.getRepository(user_entity_1.User).findOne({
+                    where: { id: Number(user.reference_user_id) }
+                });
+                console.log('referUserreferUser', referUser);
+                referUser.amount = Number(referUser?.amount) + Number(referCommissionRs);
+                await data_source_1.default.getRepository(user_entity_1.User).save(referUser);
             }
             return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Successfully update", savedDetails);
         }
@@ -381,6 +403,28 @@ class GameController {
                 io.emit('create_battle', { title: 'Create Game' });
             }, 1000);
             return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Game Canceled.", savedData);
+        }
+        catch (error) {
+            console.error('Win game result user can upload it : ', error);
+            return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, message_1.INTERNAL_SERVER_ERROR, error);
+        }
+    }
+    async addGameCode(req, res) {
+        try {
+            const { game_table_id, user_id, game_code } = req?.body;
+            let gameTable = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).findOne({
+                where: { id: Number(game_table_id) }
+            });
+            if (!gameTable) {
+                return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.NOT_FOUND, 'Game table not found');
+            }
+            gameTable['game_code'] = game_code;
+            const savedData = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).save(gameTable);
+            setTimeout(() => {
+                const io = (0, socket_1.getIO)();
+                io.emit('generate_game_code', { title: 'Generate Game', data: { game_table_id: game_table_id, user_id: user_id } });
+            }, 1000);
+            return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Game Generated Successfully.", savedData);
         }
         catch (error) {
             console.error('Win game result user can upload it : ', error);

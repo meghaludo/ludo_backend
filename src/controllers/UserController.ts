@@ -102,11 +102,11 @@ export class UserController {
         const { amount, user_id } = req.body;
         try {
             const orderId = 'ORID665456' + Date.now();
-            const userDetails : any = await AppDataSource.getRepository(User).findOne({
-                where : { id: Number(user_id) }
+            const userDetails: any = await AppDataSource.getRepository(User).findOne({
+                where: { id: Number(user_id) }
             });
 
-            if(!userDetails) {
+            if (!userDetails) {
                 return errorResponse(res, StatusCodes.NOT_FOUND, INTERNAL_SERVER_ERROR);
             }
 
@@ -128,25 +128,26 @@ export class UserController {
                     send_sms: true,
                     send_email: false
                 },
-                // link_meta: {
-                //     "return_url": "http://localhost:4200/#/login",
-                //     "notify_url": "http://localhost:4200/#/login"
-                // },
                 link_meta: {
-                    "return_url": `https://test.megaludo24.com/#/home/verify-payment/${orderId}`,
-                    "notify_url": `https://test.megaludo24.com/#/home/verify-payment/${orderId}`
+                    "return_url": `http://localhost:3000/#/home/verify-payment/${orderId}`,
+                    "notify_url": `http://localhost:3000/#/home/verify-payment/${orderId}`
                 },
+                // link_meta: {
+                //     "return_url": `https://test.megaludo24.com/#/home/verify-payment/${orderId}`,
+                //     "notify_url": `https://test.megaludo24.com/#/home/verify-payment/${orderId}`
+                // },
                 link_id: orderId,
                 link_amount: Number(amount),
                 link_currency: 'INR',
-                link_purpose: 'Payment for PlayStation 11',
+                link_purpose: 'Payment for MegaLudo24',
                 link_expiry_time: '2024-10-14T15:04:05+05:30',
             };
 
             const response = await axios.post('https://sandbox.cashfree.com/pg/links', requestData, { headers });
+            // const response = await axios.post('https://api.cashfree.com/pg/links', requestData, { headers });
 
             if (response.status >= 200 && response.status < 300) {
-                const addWallet = await AppDataSource.getRepository(UserWallet).save({amount, user_id, order_id : orderId });
+                const addWallet = await AppDataSource.getRepository(UserWallet).save({ amount, user_id, order_id: orderId });
             }
             console.log('Cashfree Link created:', response.data);
             return sendResponse(res, StatusCodes.OK, "Add Amount Successfully", response?.data);
@@ -190,57 +191,71 @@ export class UserController {
         }
     }
 
+    // find cash free payment details
     public async getCashFreeLink(req: any, res: any) {
         const linkId = req.params.orderId;
         try {
-          const headers = {
-            accept: 'application/json',
-            'x-api-version': '2023-08-01',
-            'x-client-id': 'TEST1014650891db9a9d32504b1fb9af80564101',
-            'x-client-secret': 'cfsk_ma_test_e903537bff8bebbcbb92ca35f6788ffd_3177d7f2',
-          };
-      
-      
-          const response: any= await axios.get(`https://sandbox.cashfree.com/pg/links/${linkId}`, { headers });
-      
-          if (response.status >= 200 && response.status < 300) {
-            const getData : any = await AppDataSource.getRepository(UserWallet).findOne({
-                where : { order_id : linkId }
+
+            const existingData: any = await AppDataSource.getRepository(UserWallet).findOne({
+                where: { order_id: linkId }
             });
 
-            if(response?.data["link_status"] == "PAID") {
-                getData['status'] = 1;
-                await AppDataSource.getRepository(UserWallet).save(getData);
-
-                if (getData['status'] == 1) {
-                    const userDetails: any = await AppDataSource.getRepository(User).findOne({
-                        where: { id: getData?.user_id }
-                    });
-    
-                    if (getData['amount'] == '0' || !getData['amount']) {
-                        getData['amount'] = '0';
-                    }
-                    const totalAmount = Number(userDetails['amount']) + Number(getData['amount']);
-    
-                    userDetails['amount'] = String(totalAmount);
-    
-                    await AppDataSource.getRepository(User).save(userDetails);
-                }
-
-            } else {
-                getData['status'] = 2;
-                await AppDataSource.getRepository(UserWallet).save(getData);
+            if (!existingData) {
+                return errorResponse(res, StatusCodes.NOT_FOUND, 'Payment Details Not Found');
             }
-          } else {
-            console.error('Error fetching Cashfree Link details:', response.status, response.data);
-          }
 
-          return sendResponse(res, StatusCodes.OK, "Add Amount Successfully", response?.data);
+            const headers = {
+                accept: 'application/json',
+                'x-api-version': '2023-08-01',
+                'x-client-id': 'TEST1014650891db9a9d32504b1fb9af80564101',
+                'x-client-secret': 'cfsk_ma_test_e903537bff8bebbcbb92ca35f6788ffd_3177d7f2',
+            };
+
+
+            const response: any = await axios.get(`https://sandbox.cashfree.com/pg/links/${linkId}`, { headers });
+            // const response: any = await axios.get(`https://api.cashfree.com/pg/links/${linkId}`, { headers });
+
+            if (response.status >= 200 && response.status < 300) {
+                // const getData: any = await AppDataSource.getRepository(UserWallet).findOne({
+                //     where: { order_id: linkId }
+                // });
+
+                if (response?.data["link_status"] == "PAID") {
+                    existingData['status'] = 1;
+                    await AppDataSource.getRepository(UserWallet).save(existingData);
+
+                    if (existingData['status'] == 1) {
+                        const userDetails: any = await AppDataSource.getRepository(User).findOne({
+                            where: { id: existingData?.user_id }
+                        });
+
+                        if (existingData['amount'] == '0' || !existingData['amount']) {
+                            existingData['amount'] = '0';
+                        }
+                        const totalAmount = Number(userDetails['amount']) + Number(existingData['amount']);
+
+                        userDetails['amount'] = String(totalAmount);
+
+                        await AppDataSource.getRepository(User).save(userDetails);
+                    }
+
+                } else {
+                    existingData['status'] = 2;
+                    await AppDataSource.getRepository(UserWallet).save(existingData);
+                }
+            } else {
+                existingData['status'] = 2;
+
+                await AppDataSource.getRepository(UserWallet).save(existingData);
+                console.error('Error fetching Cashfree Link details:', response.status, response.data);
+            }
+
+            return sendResponse(res, StatusCodes.OK, "Add Amount Successfully", response?.data);
         } catch (error: any) {
-          console.error('Error fetching Cashfree Link details:', error.response ? error.response.data : error.message);
-          return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
+            console.error('EEEEEEEEEEEEEEEEEEEEEEEEEEE', error.response ? error.response.data : error.message);
+            return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
         }
-      }
+    }
 
 
     // get user wallet history

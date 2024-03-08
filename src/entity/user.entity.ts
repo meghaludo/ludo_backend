@@ -29,7 +29,10 @@ export class User {
     @Column({ type: 'int', default : 0 })
     role!: number;
 
-    @Column({ type: 'int', default : 1 })
+    @Column({ type: 'int', default: 0 })
+    reference_user_id!: number;
+
+    @Column({ type: 'int', default: 1 })
     status!: number;
     
     @Column({ type: 'varchar', length: 255, nullable: true })

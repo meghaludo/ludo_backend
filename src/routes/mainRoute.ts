@@ -13,7 +13,7 @@ const mainRoutes = Router();
 
 // Usr APIS
 mainRoutes.use('/user/auth', authRoutes);
-mainRoutes.use('/user', userRoutes);
+mainRoutes.use('/user', verifyToken, userRoutes);
 mainRoutes.use('/user-common', userCommonRoute);
 
 // Admin APIS

@@ -16,7 +16,7 @@ const userNotificationRoute_1 = __importDefault(require("./userNotificationRoute
 const mainRoutes = (0, express_1.Router)();
 // Usr APIS
 mainRoutes.use('/user/auth', authRoute_1.default);
-mainRoutes.use('/user', userRoute_1.default);
+mainRoutes.use('/user', tokenMiddleware_1.verifyToken, userRoute_1.default);
 mainRoutes.use('/user-common', userCommonRoute_1.default);
 // Admin APIS
 mainRoutes.use('/admin/auth', adminAuthRoute_1.default);

@@ -12,7 +12,6 @@ const generateString_1 = require("../core/generateString");
 const data_source_1 = __importDefault(require("../data-source"));
 const user_entity_1 = require("../entity/user.entity");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const referUser_entiry_1 = require("../entity/referUser.entiry");
 const axios_1 = __importDefault(require("axios"));
 class AuthController {
     // Login user
@@ -32,9 +31,9 @@ class AuthController {
                 return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.NOT_FOUND, 'User is Block Please contact To Administrator');
             }
             console.log('mobileLogin', mobileLogin);
-            // if (!emailLogin && !mobileLogin) {
-            //     return errorResponse(res, StatusCodes.NOT_FOUND, 'User Not Found Enter Valid UserName');
-            // }
+            if (!mobileLogin) {
+                return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.NOT_FOUND, 'User Not Found Enter Valid UserName');
+            }
             const OTP = Math.floor(Math.random() * 9000) + 1000;
             console.log('OTP', OTP);
             const baseURL = 'https://www.fast2sms.com/dev/bulkV2';
@@ -42,7 +41,7 @@ class AuthController {
                 authorization: 'CwYEiWkHmg7a3PyTB1xGvzI2JMn0Zsf59eqSXuNOFDbdcAhrpjcuzXOTbvmgIG6kLn2D7SdVwAtJohZU',
                 route: 'otp',
                 variables_values: String(OTP),
-                numbers: userName,
+                numbers: mobileLogin['mobile_no'],
                 flash: '0',
             };
             const response = await axios_1.default.get(baseURL, { params });
@@ -96,7 +95,9 @@ class AuthController {
             if (mobileLogin['otp'] == String(otp)) {
                 mobileLogin['otp'] = null;
                 const userData = await data_source_1.default.getRepository(user_entity_1.User).save(mobileLogin);
-                return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "OTP Send Successfully", userData);
+                const token = jsonwebtoken_1.default.sign({ userId: mobileLogin?.id }, "dHPaQEEL]Y]5X;HOAC[kF1DNF(9eC4vs", { expiresIn: '8h' });
+                return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "OTP Verify Successfully", userData, null, token);
+                // return sendResponse(res, StatusCodes.OK, "OTP Verify Successfully", userData);
             }
             else {
                 return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.NOT_FOUND, 'Invalid OTP');
@@ -135,20 +136,21 @@ class AuthController {
             const cryptoPassword = (0, generateHashPassword_1.generateHashPassword)(userData['password']);
             enterUserData['password'] = cryptoPassword;
             enterUserData['refer_code'] = (0, generateString_1.generateRandomString)(7);
-            const userCreate = await data_source_1.default.getRepository(user_entity_1.User).save(enterUserData);
             if (!!userData?.code) {
                 const userWithCode = await data_source_1.default.getRepository(user_entity_1.User).findOne({
                     where: { refer_code: userData['code'] }
                 });
                 if (userWithCode) {
-                    const referTableData = {
-                        user_id: userCreate?.id,
-                        refrence_user_id: userWithCode?.id,
-                        code: userData['code']
-                    };
-                    await data_source_1.default.getRepository(referUser_entiry_1.ReferTable).save(referTableData);
+                    enterUserData['reference_user_id'] = userWithCode?.id;
+                    // const referTableData = {
+                    //     user_id: userCreate?.id,
+                    //     refrence_user_id: userWithCode?.id,
+                    //     code: userData['code']
+                    // }
+                    // await AppDataSource.getRepository(ReferTable).save(referTableData);
                 }
             }
+            const userCreate = await data_source_1.default.getRepository(user_entity_1.User).save(enterUserData);
             return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, 'Login Successfully', userCreate);
         }
         catch (error) {

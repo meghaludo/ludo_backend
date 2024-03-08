@@ -21,6 +21,7 @@ let User = class User {
     amount;
     otp;
     role;
+    reference_user_id;
     status;
     refer_code;
     created_on;
@@ -62,6 +63,10 @@ __decorate([
     (0, typeorm_1.Column)({ type: 'int', default: 0 }),
     __metadata("design:type", Number)
 ], User.prototype, "role", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'int', default: 0 }),
+    __metadata("design:type", Number)
+], User.prototype, "reference_user_id", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'int', default: 1 }),
     __metadata("design:type", Number)
