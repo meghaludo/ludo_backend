@@ -15,6 +15,7 @@ const contactUs_entity_1 = require("../entity/contactUs.entity");
 const gameTable_entity_1 = require("../entity/gameTable.entity");
 const adminCommission_entity_1 = require("../entity/adminCommission.entity");
 const referCommission_entity_1 = require("../entity/referCommission.entity");
+const referUser_entiry_1 = require("../entity/referUser.entiry");
 class AdminController {
     async updateAdmin(req, res) {
         try {
@@ -281,7 +282,14 @@ class AdminController {
     async getReferAdminCommission(req, res) {
         try {
             const commissionDetails = await data_source_1.default.getRepository(referCommission_entity_1.ReferCommission).find();
-            return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Get Refer Commission Details Successfully.", commissionDetails[0]);
+            const numberOfReferUser = await data_source_1.default.getRepository(referUser_entiry_1.ReferTable).count({
+                where: { refrence_user_id: req?.userId }
+            });
+            const response = {
+                commissionDetails: commissionDetails[0],
+                referUserCount: numberOfReferUser
+            };
+            return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Get Refer Commission Details Successfully.", response);
         }
         catch (error) {
             console.log('error', error);

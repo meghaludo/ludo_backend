@@ -11,6 +11,7 @@ import { getIO } from "../socket/socket";
 import { INTERNAL_SERVER_ERROR } from "../constants/message";
 import { ReasonMaster } from '../entity/gameCancelReasonMaster.entity';
 import { ReferCommission } from '../entity/referCommission.entity';
+import { UserWallet } from '../entity/wallet.entity';
 
 export class GameController {
     // create game
@@ -196,7 +197,7 @@ export class GameController {
 
                 const userAmount = Number(userDetailsForAmount['amount']) - Number(gameDetails['amount']);
                 userDetailsForAmount['amount'] = String(userAmount);
-
+                
                 await AppDataSource.getRepository(User).save(userDetailsForAmount);
             })
 
@@ -322,6 +323,23 @@ export class GameController {
 
                 gameDetails['status'] = GameStatus.Completed;
 
+                // add money in winner account
+                const findWinnerUsr = playerList?.find((element) => element.p_status == PlayerStatus.Winner);
+                const winnerUser: any = await AppDataSource.getRepository(User).findOne({
+                    where: { id: Number(findWinnerUsr?.p_id) }
+                });
+                const winnerAmount = Number(winnerUser['amount']) + Number(gameDetails['winner_amount'])
+                winnerUser['amount'] = String(winnerAmount);
+                await AppDataSource.getRepository(User).save(winnerUser);
+                // manage wallet history
+                const payload = {
+                    user_id: winnerUser?.id,
+                    amount: gameDetails['winner_amount'],
+                    payment_type: 'Win Game',
+                    status: 1
+                }
+                await AppDataSource.getRepository(UserWallet).save(payload);
+
                 await AppDataSource.getRepository(GameTable).save(gameDetails);
             }
 
@@ -329,7 +347,8 @@ export class GameController {
                 where: { id: req?.userId }
             });
 
-            if (user && (user.reference_user_id != 0)) {
+            // refer user logic 
+            if (user && (user?.reference_user_id != 0)) {
 
                 const gameDetail: any = await AppDataSource.getRepository(GameTable).findOne({
                     where: { id: Number(winPayload?.game_table_id) }
@@ -339,22 +358,12 @@ export class GameController {
                     where: { is_active: 1 }
                 });
 
-                // if (!adminCommission?.commission) {
-                //     adminCommission['commission'] = 0;
-                // }
-
                 const adminCommissionRs = ((Number(gameDetail?.amount) * 2) * Number(adminCommission?.commission) || 0) / 100;
 
                 const referCommission: any = await AppDataSource.getRepository(ReferCommission).findOne({
                     where: { is_active: 1 }
-                }); 
+                });
 
-                // console.log('referCommissionreferCommission', referCommission)
-
-                // if (!referCommission?.commission) {
-                //     referCommission['commission'] = 0;
-                // }
-                // console.log('referCommissioncommission', referCommission['commission'])
                 const referCommissionRs = (Number(adminCommissionRs) * Number(referCommission?.commission) || 0) / 100;
 
                 console.log('user.reference_user_id', user.reference_user_id);
@@ -404,6 +413,23 @@ export class GameController {
                 });
 
                 gameDetails['status'] = GameStatus.Completed;
+
+                // add money in winner account
+                const findWinnerUsr = playerList?.find((element) => element.p_status == PlayerStatus.Winner);
+                const winnerUser: any = await AppDataSource.getRepository(User).findOne({
+                    where: { id: Number(findWinnerUsr?.p_id) }
+                });
+                const winnerAmount = Number(winnerUser['amount']) + Number(gameDetails['winner_amount'])
+                winnerUser['amount'] = String(winnerAmount);
+                await AppDataSource.getRepository(User).save(winnerUser);
+                // manage wallet history
+                const payload = {
+                    user_id: winnerUser?.id,
+                    amount: gameDetails['winner_amount'],
+                    payment_type: 'Win Game',
+                    status: 1
+                }
+                await AppDataSource.getRepository(UserWallet).save(payload);
 
                 await AppDataSource.getRepository(GameTable).save(gameDetails);
             }

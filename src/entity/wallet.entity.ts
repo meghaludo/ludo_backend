@@ -14,6 +14,9 @@ export class UserWallet {
 
     @Column({ type: 'varchar', length: 255, nullable: true })
     order_id!: string;
+
+    @Column({ type: 'varchar', length: 255, nullable: true })
+    payment_type!: string;
     
     @Column({ type: 'int', default : 0,  nullable : false })
     status!: number; // 0: pending, 1: verify, 2: decline

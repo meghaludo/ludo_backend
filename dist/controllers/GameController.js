@@ -16,6 +16,7 @@ const socket_1 = require("../socket/socket");
 const message_1 = require("../constants/message");
 const gameCancelReasonMaster_entity_1 = require("../entity/gameCancelReasonMaster.entity");
 const referCommission_entity_1 = require("../entity/referCommission.entity");
+const wallet_entity_1 = require("../entity/wallet.entity");
 class GameController {
     // create game
     async createGame(req, res) {
@@ -261,30 +262,39 @@ class GameController {
                     where: { id: winPayload?.game_table_id }
                 });
                 gameDetails['status'] = gameStatus_1.GameStatus.Completed;
+                // add money in winner account
+                const findWinnerUsr = playerList?.find((element) => element.p_status == gameStatus_1.PlayerStatus.Winner);
+                const winnerUser = await data_source_1.default.getRepository(user_entity_1.User).findOne({
+                    where: { id: Number(findWinnerUsr?.p_id) }
+                });
+                const winnerAmount = Number(winnerUser['amount']) + Number(gameDetails['winner_amount']);
+                winnerUser['amount'] = String(winnerAmount);
+                await data_source_1.default.getRepository(user_entity_1.User).save(winnerUser);
+                // manage wallet history
+                const payload = {
+                    user_id: winnerUser?.id,
+                    amount: gameDetails['winner_amount'],
+                    payment_type: 'Win Game',
+                    status: 1
+                };
+                await data_source_1.default.getRepository(wallet_entity_1.UserWallet).save(payload);
                 await data_source_1.default.getRepository(gameTable_entity_1.GameTable).save(gameDetails);
             }
             const user = await data_source_1.default.getRepository(user_entity_1.User).findOne({
                 where: { id: req?.userId }
             });
-            if (user && (user.reference_user_id != 0)) {
+            // refer user logic 
+            if (user && (user?.reference_user_id != 0)) {
                 const gameDetail = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).findOne({
                     where: { id: Number(winPayload?.game_table_id) }
                 });
                 const adminCommission = await data_source_1.default.getRepository(adminCommission_entity_1.AdminCommission).findOne({
                     where: { is_active: 1 }
                 });
-                // if (!adminCommission?.commission) {
-                //     adminCommission['commission'] = 0;
-                // }
                 const adminCommissionRs = ((Number(gameDetail?.amount) * 2) * Number(adminCommission?.commission) || 0) / 100;
                 const referCommission = await data_source_1.default.getRepository(referCommission_entity_1.ReferCommission).findOne({
                     where: { is_active: 1 }
                 });
-                // console.log('referCommissionreferCommission', referCommission)
-                // if (!referCommission?.commission) {
-                //     referCommission['commission'] = 0;
-                // }
-                // console.log('referCommissioncommission', referCommission['commission'])
                 const referCommissionRs = (Number(adminCommissionRs) * Number(referCommission?.commission) || 0) / 100;
                 console.log('user.reference_user_id', user.reference_user_id);
                 const referUser = await data_source_1.default.getRepository(user_entity_1.User).findOne({
@@ -323,6 +333,22 @@ class GameController {
                     where: { id: loosePayload?.game_table_id }
                 });
                 gameDetails['status'] = gameStatus_1.GameStatus.Completed;
+                // add money in winner account
+                const findWinnerUsr = playerList?.find((element) => element.p_status == gameStatus_1.PlayerStatus.Winner);
+                const winnerUser = await data_source_1.default.getRepository(user_entity_1.User).findOne({
+                    where: { id: Number(findWinnerUsr?.p_id) }
+                });
+                const winnerAmount = Number(winnerUser['amount']) + Number(gameDetails['winner_amount']);
+                winnerUser['amount'] = String(winnerAmount);
+                await data_source_1.default.getRepository(user_entity_1.User).save(winnerUser);
+                // manage wallet history
+                const payload = {
+                    user_id: winnerUser?.id,
+                    amount: gameDetails['winner_amount'],
+                    payment_type: 'Win Game',
+                    status: 1
+                };
+                await data_source_1.default.getRepository(wallet_entity_1.UserWallet).save(payload);
                 await data_source_1.default.getRepository(gameTable_entity_1.GameTable).save(gameDetails);
             }
             return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Successfully updated", savedDetails);

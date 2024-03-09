@@ -17,8 +17,10 @@ userRoutes.get('/check-transaction-status/:orderId', userController.getCashFreeL
 // withdraw amount
 userRoutes.post('/withdraw-request', userController.addWithdrawRequest);
 userRoutes.get('/withdraw-history', userController.withdrawHistory);
+userRoutes.get('/withdraw-details/:id', userController.getWithdrawDetails);
 
 // update user ludo name
 userRoutes.post('/update-ludo-name', userController.updateLudoName);
+
 
 export default userRoutes;

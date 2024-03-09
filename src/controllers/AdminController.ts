@@ -9,6 +9,7 @@ import { ContactUs } from "../entity/contactUs.entity";
 import { GameTable } from "../entity/gameTable.entity";
 import { AdminCommission } from "../entity/adminCommission.entity";
 import { ReferCommission } from "../entity/referCommission.entity";
+import { ReferTable } from "../entity/referUser.entiry";
 
 export class AdminController {
     public async updateAdmin(req: any, res: any) {
@@ -340,7 +341,16 @@ export class AdminController {
         try {
             const commissionDetails = await AppDataSource.getRepository(ReferCommission).find();
 
-            return sendResponse(res, StatusCodes.OK, "Get Refer Commission Details Successfully.", commissionDetails[0]);
+            const numberOfReferUser = await AppDataSource.getRepository(ReferTable).count({
+                where : { refrence_user_id : req?.userId }
+            });
+
+            const response = {
+                commissionDetails : commissionDetails[0],
+                referUserCount : numberOfReferUser
+            }
+
+            return sendResponse(res, StatusCodes.OK, "Get Refer Commission Details Successfully.", response);
         } catch (error) {
             console.log('error', error);
             return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);

@@ -21,6 +21,7 @@ let GamePlayer = class GamePlayer {
     p_status;
     image;
     created_on;
+    modified_on;
     gameTable;
     playerOne;
 };
@@ -53,6 +54,10 @@ __decorate([
     (0, typeorm_1.CreateDateColumn)({ type: 'timestamp', precision: 6, default: () => 'CURRENT_TIMESTAMP(6)' }),
     __metadata("design:type", Date)
 ], GamePlayer.prototype, "created_on", void 0);
+__decorate([
+    (0, typeorm_1.UpdateDateColumn)({ type: 'timestamp', precision: 6, default: () => 'CURRENT_TIMESTAMP(6)', onUpdate: 'CURRENT_TIMESTAMP(6)' }),
+    __metadata("design:type", Date)
+], GamePlayer.prototype, "modified_on", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => gameTable_entity_1.GameTable, gameTable => gameTable.gamePlayer),
     (0, typeorm_1.JoinColumn)({ name: "game_table_id", referencedColumnName: "id" }),

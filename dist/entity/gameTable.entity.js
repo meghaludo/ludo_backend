@@ -40,8 +40,7 @@ let GameTable = class GameTable {
     game_result_id;
     // @Column({ type: 'int', default : 0 }) 
     // is_running!: number;   // if 0 then waiting for player if 1 then running
-    // @Column({ type: 'int', default : 0 })
-    // is_checked!: number;
+    admin_verify;
     // @Column({ type: 'int', default : 1 })
     // is_active!: number;
     status; // 1 : Created, 2: Requested, 3: Running, 4: Completed, 5: Cancel   
@@ -92,6 +91,10 @@ __decorate([
     (0, typeorm_1.Column)({ type: 'int', nullable: true }),
     __metadata("design:type", Number)
 ], GameTable.prototype, "game_result_id", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'int', default: 0 }),
+    __metadata("design:type", Number)
+], GameTable.prototype, "admin_verify", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'int', default: 1 }),
     __metadata("design:type", Number)

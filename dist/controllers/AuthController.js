@@ -133,8 +133,8 @@ class AuthController {
                 email: userData?.email || null,
                 password: userData?.password || null,
             };
-            const cryptoPassword = (0, generateHashPassword_1.generateHashPassword)(userData['password']);
-            enterUserData['password'] = cryptoPassword;
+            // const cryptoPassword = generateHashPassword(userData['password']);
+            // enterUserData['password'] = cryptoPassword;
             enterUserData['refer_code'] = (0, generateString_1.generateRandomString)(7);
             if (!!userData?.code) {
                 const userWithCode = await data_source_1.default.getRepository(user_entity_1.User).findOne({

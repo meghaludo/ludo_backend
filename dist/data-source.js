@@ -14,8 +14,8 @@ const typeorm_1 = require("typeorm");
 //   entities: ["src/entity/{*.ts, *.js}"],
 //   // entities: ["dist/entity/*.entity.js"],
 //   // entities: ["entity/*.entity.{ts,js}"],
-//   logging: false,
-//   synchronize: false,
+//   logging: true,
+//   synchronize: true,
 // });
 exports.AppDataSource = new typeorm_1.DataSource({
     type: "mysql",

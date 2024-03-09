@@ -16,9 +16,16 @@ let Withdraw = class Withdraw {
     id;
     user_id;
     amount;
-    status; // 0: pending, 1: verify, 2: decline
+    status; // 0: pending, 1: verify, 2: decline , 3 : processing
     created_on;
     userDetail;
+    email;
+    mobile_no;
+    account_no;
+    ifsc;
+    branch;
+    bank_name;
+    upi;
 };
 exports.Withdraw = Withdraw;
 __decorate([
@@ -34,7 +41,7 @@ __decorate([
     __metadata("design:type", String)
 ], Withdraw.prototype, "amount", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'int', default: 0, nullable: false }),
+    (0, typeorm_1.Column)({ type: 'int', default: 3, nullable: false }),
     __metadata("design:type", Number)
 ], Withdraw.prototype, "status", void 0);
 __decorate([
@@ -46,6 +53,34 @@ __decorate([
     (0, typeorm_1.JoinColumn)({ name: "user_id", referencedColumnName: "id" }),
     __metadata("design:type", user_entity_1.User)
 ], Withdraw.prototype, "userDetail", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', length: 255, nullable: false }),
+    __metadata("design:type", String)
+], Withdraw.prototype, "email", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', length: 255, nullable: false }),
+    __metadata("design:type", String)
+], Withdraw.prototype, "mobile_no", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', length: 255, nullable: false }),
+    __metadata("design:type", String)
+], Withdraw.prototype, "account_no", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', length: 255, nullable: false }),
+    __metadata("design:type", String)
+], Withdraw.prototype, "ifsc", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', length: 255, nullable: false }),
+    __metadata("design:type", String)
+], Withdraw.prototype, "branch", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', length: 255, nullable: false }),
+    __metadata("design:type", String)
+], Withdraw.prototype, "bank_name", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', length: 255, nullable: false }),
+    __metadata("design:type", String)
+], Withdraw.prototype, "upi", void 0);
 exports.Withdraw = Withdraw = __decorate([
     (0, typeorm_1.Entity)('withdraws')
 ], Withdraw);

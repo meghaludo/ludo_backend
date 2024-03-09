@@ -55,8 +55,8 @@ export class GameTable {
     // @Column({ type: 'int', default : 0 }) 
     // is_running!: number;   // if 0 then waiting for player if 1 then running
 
-    // @Column({ type: 'int', default : 0 })
-    // is_checked!: number;
+    @Column({ type: 'int', default : 0 })
+    admin_verify!: number;
 
     // @Column({ type: 'int', default : 1 })
     // is_active!: number;

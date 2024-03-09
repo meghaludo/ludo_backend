@@ -162,8 +162,8 @@ export class AuthController {
                 password: userData?.password || null,
             }
 
-            const cryptoPassword = generateHashPassword(userData['password']);
-            enterUserData['password'] = cryptoPassword;
+            // const cryptoPassword = generateHashPassword(userData['password']);
+            // enterUserData['password'] = cryptoPassword;
             enterUserData['refer_code'] = generateRandomString(7);
 
             if (!!userData?.code) {

@@ -119,17 +119,17 @@ class UserController {
                     customer_name: userDetails.full_name
                 },
                 link_notify: {
-                    send_sms: true,
+                    send_sms: false,
                     send_email: false
                 },
-                // link_meta: {
-                //     "return_url": `http://localhost:3000/#/home/verify-payment/${orderId}`,
-                //     "notify_url": `http://localhost:3000/#/home/verify-payment/${orderId}`
-                // },
                 link_meta: {
-                    "return_url": `https://test.megaludo24.com/#/home/verify-payment/${orderId}`,
-                    "notify_url": `https://test.megaludo24.com/#/home/verify-payment/${orderId}`
+                    "return_url": `http://localhost:3000/#/home/verify-payment/${orderId}`,
+                    "notify_url": `http://localhost:3000/#/home/verify-payment/${orderId}`
                 },
+                // link_meta: {
+                //     "return_url": `https://test.megaludo24.com/#/home/verify-payment/${orderId}`,
+                //     "notify_url": `https://test.megaludo24.com/#/home/verify-payment/${orderId}`
+                // },
                 link_id: orderId,
                 link_amount: Number(amount),
                 link_currency: 'INR',
@@ -250,6 +250,9 @@ class UserController {
     async addWithdrawRequest(req, res) {
         try {
             const withdrawDetails = req?.body;
+            if (Number(withdrawDetails?.amount) < 190) {
+                return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.NOT_FOUND, 'Withdraw Min Amount Rs. 190');
+            }
             const addWithdraw = await data_source_1.default.getRepository(withdraw_entity_1.Withdraw).save(withdrawDetails);
             return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Withdraw Amount Request Send Successfully", addWithdraw);
         }
@@ -264,6 +267,22 @@ class UserController {
                 where: { user_id: req?.userId }
             });
             return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Withdraw history", withdrawHistory);
+        }
+        catch (error) {
+            return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, message_1.INTERNAL_SERVER_ERROR, error);
+        }
+    }
+    // get withdraw history
+    async getWithdrawDetails(req, res) {
+        try {
+            const details = await data_source_1.default.getRepository(withdraw_entity_1.Withdraw).findOne({
+                where: { id: Number(req.params.id) },
+                relations: ['userDetail']
+            });
+            if (!details) {
+                return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.NOT_FOUND, 'Details Not Found');
+            }
+            return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Withdraw Details Get Successfully", details);
         }
         catch (error) {
             return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, message_1.INTERNAL_SERVER_ERROR, error);

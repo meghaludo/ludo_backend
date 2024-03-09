@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { User } from "./user.entity";
 import { GameTable } from "./gameTable.entity";
 
@@ -24,6 +24,9 @@ export class GamePlayer {
 
     @CreateDateColumn({ type: 'timestamp', precision: 6, default: () => 'CURRENT_TIMESTAMP(6)' })
     created_on!: Date;
+
+    @UpdateDateColumn({ type: 'timestamp', precision: 6, default: () => 'CURRENT_TIMESTAMP(6)', onUpdate: 'CURRENT_TIMESTAMP(6)' })
+    modified_on!: Date;
 
     @ManyToOne(() => GameTable, gameTable => gameTable.gamePlayer)
     @JoinColumn({ name: "game_table_id", referencedColumnName: "id" })
