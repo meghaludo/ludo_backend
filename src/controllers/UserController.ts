@@ -128,14 +128,14 @@ export class UserController {
                     send_sms: false,
                     send_email: false
                 },
-                link_meta: {
-                    "return_url": `http://localhost:3000/#/home/verify-payment/${orderId}`,
-                    "notify_url": `http://localhost:3000/#/home/verify-payment/${orderId}`
-                },
                 // link_meta: {
-                //     "return_url": `https://test.megaludo24.com/#/home/verify-payment/${orderId}`,
-                //     "notify_url": `https://test.megaludo24.com/#/home/verify-payment/${orderId}`
+                //     "return_url": `http://localhost:3000/#/home/verify-payment/${orderId}`,
+                //     "notify_url": `http://localhost:3000/#/home/verify-payment/${orderId}`
                 // },
+                link_meta: {
+                    "return_url": `https://test.megaludo24.com/#/home/verify-payment/${orderId}`,
+                    "notify_url": `https://test.megaludo24.com/#/home/verify-payment/${orderId}`
+                },
                 link_id: orderId,
                 link_amount: Number(amount),
                 link_currency: 'INR',
