@@ -27,7 +27,7 @@ exports.AppDataSource = new typeorm_1.DataSource({
     // database: "ludo_game",
     database: "ludo_game",
     //  entities: ["src/entity/{*.ts, *.js}"],
-    entities: ["dist/entity/*.entity.js"],
+    entities: ["./entity/*.entity.js"],
     // entities: ["entity/*.entity.{ts,js}"],
     logging: true,
     synchronize: true,
