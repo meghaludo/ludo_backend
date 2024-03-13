@@ -19,7 +19,7 @@ const typeorm_1 = require("typeorm");
 // });
 exports.AppDataSource = new typeorm_1.DataSource({
     type: "mysql",
-    host: "localhost",
+    host: "127.0.0.1",
     port: 3306,
     username: "root",
     password: "password",
@@ -27,7 +27,7 @@ exports.AppDataSource = new typeorm_1.DataSource({
     // database: "ludo_game",
     database: "ludo_game",
     //  entities: ["src/entity/{*.ts, *.js}"],
-    entities: ["./entity/*.entity.js"],
+    entities: ["dist/entity/*.entity.js"],
     // entities: ["entity/*.entity.{ts,js}"],
     logging: true,
     synchronize: true,
