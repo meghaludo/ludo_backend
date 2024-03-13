@@ -10,6 +10,7 @@ userRoutes.post('/user-update', userController.updateUser);
 userRoutes.post('/add-wallet', userController.addWalletAmount);
 userRoutes.get('/wallet-history', userController.walletHistory);
 userRoutes.get('/wallet-amount', userController.getWalletAmount);
+userRoutes.get('/get-account-details', userController.getAccountDetails);
 userRoutes.post('/cash-transaction', userController.cashFree);
 userRoutes.get('/check-transaction-status/:orderId', userController.getCashFreeLink);
 // withdraw amount

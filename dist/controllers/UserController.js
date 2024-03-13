@@ -122,14 +122,14 @@ class UserController {
                     send_sms: false,
                     send_email: false
                 },
-                link_meta: {
-                    "return_url": `http://localhost:3000/#/home/verify-payment/${orderId}`,
-                    "notify_url": `http://localhost:3000/#/home/verify-payment/${orderId}`
-                },
                 // link_meta: {
-                //     "return_url": `https://test.megaludo24.com/#/home/verify-payment/${orderId}`,
-                //     "notify_url": `https://test.megaludo24.com/#/home/verify-payment/${orderId}`
+                //     "return_url": `http://localhost:3000/#/home/verify-payment/${orderId}`,
+                //     "notify_url": `http://localhost:3000/#/home/verify-payment/${orderId}`
                 // },
+                link_meta: {
+                    "return_url": `https://test.megaludo24.com/#/home/verify-payment/${orderId}`,
+                    "notify_url": `https://test.megaludo24.com/#/home/verify-payment/${orderId}`
+                },
                 link_id: orderId,
                 link_amount: Number(amount),
                 link_currency: 'INR',
@@ -295,6 +295,21 @@ class UserController {
                 where: { id: req?.userId }
             });
             return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "User Wallet Amount Successfully Get", { walletAmount: walletAmount?.amount });
+        }
+        catch (error) {
+            return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, message_1.INTERNAL_SERVER_ERROR, error);
+        }
+    }
+    // get user wallet Amount
+    async getAccountDetails(req, res) {
+        try {
+            const walletAmount = await data_source_1.default.getRepository(withdraw_entity_1.Withdraw).findOne({
+                where: { user_id: req?.userId }
+            });
+            if (!walletAmount) {
+                (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.BAD_REQUEST, "Bank Details Not Found");
+            }
+            return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "User Wallet Details Successfully Found", walletAmount);
         }
         catch (error) {
             return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, message_1.INTERNAL_SERVER_ERROR, error);

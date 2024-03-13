@@ -128,14 +128,14 @@ export class UserController {
                     send_sms: false,
                     send_email: false
                 },
-                link_meta: {
-                    "return_url": `http://localhost:3000/#/home/verify-payment/${orderId}`,
-                    "notify_url": `http://localhost:3000/#/home/verify-payment/${orderId}`
-                },
                 // link_meta: {
-                //     "return_url": `https://test.megaludo24.com/#/home/verify-payment/${orderId}`,
-                //     "notify_url": `https://test.megaludo24.com/#/home/verify-payment/${orderId}`
+                //     "return_url": `http://localhost:3000/#/home/verify-payment/${orderId}`,
+                //     "notify_url": `http://localhost:3000/#/home/verify-payment/${orderId}`
                 // },
+                link_meta: {
+                    "return_url": `https://test.megaludo24.com/#/home/verify-payment/${orderId}`,
+                    "notify_url": `https://test.megaludo24.com/#/home/verify-payment/${orderId}`
+                },
                 link_id: orderId,
                 link_amount: Number(amount),
                 link_currency: 'INR',
@@ -276,7 +276,7 @@ export class UserController {
         try {
             const withdrawDetails = req?.body;
 
-            if(Number(withdrawDetails?.amount) < 190) {
+            if (Number(withdrawDetails?.amount) < 190) {
                 return errorResponse(res, StatusCodes.NOT_FOUND, 'Withdraw Min Amount Rs. 190');
             }
 
@@ -302,14 +302,14 @@ export class UserController {
     }
 
     // get withdraw history
-    public async getWithdrawDetails(req:any, res:any) {
+    public async getWithdrawDetails(req: any, res: any) {
         try {
             const details = await AppDataSource.getRepository(Withdraw).findOne({
-                where : { id : Number(req.params.id) },
-                relations : ['userDetail']
+                where: { id: Number(req.params.id) },
+                relations: ['userDetail']
             });
 
-            if(!details) {
+            if (!details) {
                 return errorResponse(res, StatusCodes.NOT_FOUND, 'Details Not Found');
             }
 
@@ -327,6 +327,23 @@ export class UserController {
             });
 
             return sendResponse(res, StatusCodes.OK, "User Wallet Amount Successfully Get", { walletAmount: walletAmount?.amount });
+        } catch (error) {
+            return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
+        }
+    }
+
+    // get user wallet Amount
+    public async getAccountDetails(req: any, res: any) {
+        try {
+            const walletAmount = await AppDataSource.getRepository(Withdraw).findOne({
+                where: { user_id : req?.userId }
+            });
+
+            if(!walletAmount) {
+                errorResponse(res, StatusCodes.BAD_REQUEST, "Bank Details Not Found");
+            }
+
+            return sendResponse(res, StatusCodes.OK, "User Wallet Details Successfully Found", walletAmount);
         } catch (error) {
             return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
         }
