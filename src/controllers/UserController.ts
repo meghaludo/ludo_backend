@@ -1,3 +1,4 @@
+import { ReferCommission } from './../entity/referCommission.entity';
 import { StatusCodes } from "http-status-codes";
 import { errorResponse, sendResponse } from "../utils/responseUtil";
 import AppDataSource from "../data-source";
@@ -7,6 +8,7 @@ import { UserWallet } from "../entity/wallet.entity";
 import { Withdraw } from "../entity/withdraw.entity";
 import './../cron';
 import axios from "axios";
+import { ReferTable } from '../entity/referUser.entiry';
 
 export class UserController {
     public async updateUser(req: any, res: any) {
@@ -336,10 +338,10 @@ export class UserController {
     public async getAccountDetails(req: any, res: any) {
         try {
             const walletAmount = await AppDataSource.getRepository(Withdraw).findOne({
-                where: { user_id : req?.userId }
+                where: { user_id: req?.userId }
             });
 
-            if(!walletAmount) {
+            if (!walletAmount) {
                 errorResponse(res, StatusCodes.BAD_REQUEST, "Bank Details Not Found");
             }
 
@@ -367,6 +369,28 @@ export class UserController {
             await AppDataSource.getRepository(User).save(getUser);
 
             return sendResponse(res, StatusCodes.OK, "User Wallet Amount Successfully Get", { ludo_name: ludo_name })
+        } catch (error) {
+            return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
+        }
+    }
+
+    // get refer user details
+    public async getReferUserDetails(req: any, res: any) {
+        try {
+            const getReferCommission: any[] = await AppDataSource.getRepository(ReferCommission).find();
+
+            const referCommission: any = getReferCommission?.length > 0 ? getReferCommission[0] : {}
+
+            const referUserData: any[] = await AppDataSource.getRepository(ReferTable).find({
+                where: { user_id: req?.userId }
+            });
+
+            const payload = {
+                commission: referCommission,
+                referUser: referUserData?.length,
+            }
+
+            return sendResponse(res, StatusCodes.OK, "User refer details successfully get", payload);
         } catch (error) {
             return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
         }

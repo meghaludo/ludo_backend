@@ -4,6 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserController = void 0;
+const referCommission_entity_1 = require("./../entity/referCommission.entity");
 const http_status_codes_1 = require("http-status-codes");
 const responseUtil_1 = require("../utils/responseUtil");
 const data_source_1 = __importDefault(require("../data-source"));
@@ -13,6 +14,7 @@ const wallet_entity_1 = require("../entity/wallet.entity");
 const withdraw_entity_1 = require("../entity/withdraw.entity");
 require("./../cron");
 const axios_1 = __importDefault(require("axios"));
+const referUser_entiry_1 = require("../entity/referUser.entiry");
 class UserController {
     async updateUser(req, res) {
         try {
@@ -328,6 +330,24 @@ class UserController {
             getUser['ludo_name'] = ludo_name;
             await data_source_1.default.getRepository(user_entity_1.User).save(getUser);
             return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "User Wallet Amount Successfully Get", { ludo_name: ludo_name });
+        }
+        catch (error) {
+            return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, message_1.INTERNAL_SERVER_ERROR, error);
+        }
+    }
+    // get refer user details
+    async getReferUserDetails(req, res) {
+        try {
+            const getReferCommission = await data_source_1.default.getRepository(referCommission_entity_1.ReferCommission).find();
+            const referCommission = getReferCommission?.length > 0 ? getReferCommission[0] : {};
+            const referUserData = await data_source_1.default.getRepository(referUser_entiry_1.ReferTable).find({
+                where: { user_id: req?.userId }
+            });
+            const payload = {
+                commission: referCommission,
+                referUser: referUserData?.length,
+            };
+            return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "User refer details successfully get", payload);
         }
         catch (error) {
             return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, message_1.INTERNAL_SERVER_ERROR, error);

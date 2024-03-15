@@ -19,4 +19,6 @@ userRoutes.get('/withdraw-history', userController.withdrawHistory);
 userRoutes.get('/withdraw-details/:id', userController.getWithdrawDetails);
 // update user ludo name
 userRoutes.post('/update-ludo-name', userController.updateLudoName);
+// get user refer details
+userRoutes.get('/refer-details', userController.getReferUserDetails);
 exports.default = userRoutes;
