@@ -326,7 +326,6 @@ export class AdminController {
     public async addEditReferCommission(req: any, res: any) {
         try {
             const commissionDetails = req?.body;
-            console.log('commissionDetails', commissionDetails)
             const addEditCommissionDetails = await AppDataSource.getRepository(ReferCommission).save(commissionDetails);
 
             return sendResponse(res, StatusCodes.OK, "Add Edit Refer Commission Details Successfully.", addEditCommissionDetails);
@@ -341,16 +340,9 @@ export class AdminController {
         try {
             const commissionDetails = await AppDataSource.getRepository(ReferCommission).find();
 
-            const numberOfReferUser = await AppDataSource.getRepository(ReferTable).count({
-                where : { refrence_user_id : req?.userId }
-            });
+            const referCommission : any = commissionDetails?.length > 0 ?  commissionDetails[0] : {};
 
-            const response = {
-                commissionDetails : commissionDetails[0],
-                referUserCount : numberOfReferUser
-            }
-
-            return sendResponse(res, StatusCodes.OK, "Get Refer Commission Details Successfully.", response);
+            return sendResponse(res, StatusCodes.OK, "Get Refer Commission Details Successfully.", referCommission);
         } catch (error) {
             console.log('error', error);
             return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);

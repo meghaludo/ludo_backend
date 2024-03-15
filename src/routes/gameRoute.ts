@@ -32,6 +32,6 @@ gameRoute.get('/get-game-history', gameController.getGameHistoryUser);
 // get game history for particular user
 gameRoute.get('/admin-game-history', gameController.adminGameHistory);
 gameRoute.get('/cancel-reason-list', gameController.cancelReasonList); // cancel game
-gameRoute.post('/add-game-code', gameController.addGameCode); // cancel game
+gameRoute.post('/add-game-code', gameController.addGameCode);  // add game code and show this game code to both user
 
 export default gameRoute;

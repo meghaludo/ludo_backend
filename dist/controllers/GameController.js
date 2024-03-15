@@ -319,7 +319,6 @@ class GameController {
             const existingData = await data_source_1.default.getRepository(gamePlayer_entity_1.GamePlayer).findOne({
                 where: { game_table_id: Number(loosePayload?.game_table_id), p_id: req?.userId }
             });
-            console.log('existingData looser', existingData);
             let savedDetails;
             if (existingData) {
                 existingData['p_status'] = gameStatus_1.PlayerStatus.Looser;
@@ -328,29 +327,58 @@ class GameController {
             const playerList = await data_source_1.default.getRepository(gamePlayer_entity_1.GamePlayer).find({
                 where: { game_table_id: Number(loosePayload?.game_table_id) }
             });
-            if ((playerList[0]?.p_status == gameStatus_1.PlayerStatus.Winner && playerList[1]?.p_status == gameStatus_1.PlayerStatus.Looser) || (playerList[0]?.p_status == gameStatus_1.PlayerStatus.Looser && playerList[1]?.p_status == gameStatus_1.PlayerStatus.Winner)) {
-                const gameDetails = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).findOne({
-                    where: { id: loosePayload?.game_table_id }
-                });
-                gameDetails['status'] = gameStatus_1.GameStatus.Completed;
-                // add money in winner account
-                const findWinnerUsr = playerList?.find((element) => element.p_status == gameStatus_1.PlayerStatus.Winner);
-                const winnerUser = await data_source_1.default.getRepository(user_entity_1.User).findOne({
-                    where: { id: Number(findWinnerUsr?.p_id) }
-                });
-                const winnerAmount = Number(winnerUser['amount']) + Number(gameDetails['winner_amount']);
-                winnerUser['amount'] = String(winnerAmount);
-                await data_source_1.default.getRepository(user_entity_1.User).save(winnerUser);
-                // manage wallet history
-                const payload = {
-                    user_id: winnerUser?.id,
-                    amount: gameDetails['winner_amount'],
-                    payment_type: 'Win Game',
-                    status: 1
-                };
-                await data_source_1.default.getRepository(wallet_entity_1.UserWallet).save(payload);
-                await data_source_1.default.getRepository(gameTable_entity_1.GameTable).save(gameDetails);
-            }
+            const gameDetails = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).findOne({
+                where: { id: loosePayload?.game_table_id }
+            });
+            gameDetails['status'] = gameStatus_1.GameStatus.Completed;
+            // add money in winner account
+            const findWinnerUsr = playerList?.find((element) => element.p_status != gameStatus_1.PlayerStatus.Looser);
+            console.log('findWinnerUsr', findWinnerUsr);
+            const winnerUser = await data_source_1.default.getRepository(user_entity_1.User).findOne({
+                where: { id: Number(findWinnerUsr?.p_id) }
+            });
+            console.log('winnerUser', winnerUser);
+            const winnerAmount = Number(winnerUser['amount']) + Number(gameDetails['winner_amount']);
+            winnerUser['amount'] = String(winnerAmount);
+            await data_source_1.default.getRepository(user_entity_1.User).save(winnerUser);
+            findWinnerUsr['p_status'] = gameStatus_1.PlayerStatus.Winner;
+            await data_source_1.default.getRepository(gamePlayer_entity_1.GamePlayer).save(findWinnerUsr);
+            // manage wallet history
+            const payload = {
+                user_id: winnerUser?.id,
+                amount: gameDetails['winner_amount'],
+                payment_type: 'Win Game',
+                status: 1
+            };
+            await data_source_1.default.getRepository(wallet_entity_1.UserWallet).save(payload);
+            await data_source_1.default.getRepository(gameTable_entity_1.GameTable).save(gameDetails);
+            // if ((playerList[0]?.p_status == PlayerStatus.Winner && playerList[1]?.p_status == PlayerStatus.Looser) || (playerList[0]?.p_status == PlayerStatus.Looser && playerList[1]?.p_status == PlayerStatus.Winner)) {
+            //     const gameDetails: any = await AppDataSource.getRepository(GameTable).findOne({
+            //         where: { id: loosePayload?.game_table_id }
+            //     });
+            //     gameDetails['status'] = GameStatus.Completed;
+            //     // add money in winner account
+            //     const findWinnerUsr = playerList?.find((element) => element.p_status == PlayerStatus.Winner);
+            //     const winnerUser: any = await AppDataSource.getRepository(User).findOne({
+            //         where: { id: Number(findWinnerUsr?.p_id) }
+            //     });
+            //     const winnerAmount = Number(winnerUser['amount']) + Number(gameDetails['winner_amount'])
+            //     winnerUser['amount'] = String(winnerAmount);
+            //     await AppDataSource.getRepository(User).save(winnerUser);
+            //     // manage wallet history
+            //     const payload = {
+            //         user_id: winnerUser?.id,
+            //         amount: gameDetails['winner_amount'],
+            //         payment_type: 'Win Game',
+            //         status: 1
+            //     }
+            //     await AppDataSource.getRepository(UserWallet).save(payload);
+            //     await AppDataSource.getRepository(GameTable).save(gameDetails);
+            // }
+            setTimeout(() => {
+                const io = (0, socket_1.getIO)();
+                io.emit('generate_game_code', { title: 'Generate Game', data: { game_table_id: loosePayload?.game_table_id, user_id: winnerUser?.id } });
+            }, 1000);
             return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Successfully updated", savedDetails);
         }
         catch (error) {
@@ -406,29 +434,35 @@ class GameController {
             let gameTable = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).findOne({
                 where: { id: Number(cancelDetails?.game_table_id) }
             });
-            gameTable['status'] = gameStatus_1.GameStatus.Cancel;
-            gameTable['cancel_user_id'] = req?.userId;
-            gameTable['cancel_reason'] = cancelDetails?.cancel_reasone;
-            const savedData = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).save(gameTable);
             const playerList = await data_source_1.default.getRepository(gamePlayer_entity_1.GamePlayer).find({
                 where: { game_table_id: Number(cancelDetails?.game_table_id) }
             });
-            await playerList?.map(async (player) => {
-                player['p_status'] = gameStatus_1.PlayerStatus.Cancel;
-                await data_source_1.default.getRepository(gamePlayer_entity_1.GamePlayer).save(player);
-                let userData = await data_source_1.default.getRepository(user_entity_1.User).findOne({
-                    where: { id: Number(player?.p_id) }
+            // both player status are running that time only cancel game other wise not cancel game
+            if (playerList[0]?.p_status == gameStatus_1.PlayerStatus.Running && playerList[1]?.p_status == gameStatus_1.PlayerStatus.Running) {
+                gameTable['status'] = gameStatus_1.GameStatus.Cancel;
+                gameTable['cancel_user_id'] = req?.userId;
+                gameTable['cancel_reason'] = cancelDetails?.cancel_reasone;
+                const savedData = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).save(gameTable);
+                await playerList?.map(async (player) => {
+                    player['p_status'] = gameStatus_1.PlayerStatus.Cancel;
+                    await data_source_1.default.getRepository(gamePlayer_entity_1.GamePlayer).save(player);
+                    let userData = await data_source_1.default.getRepository(user_entity_1.User).findOne({
+                        where: { id: Number(player?.p_id) }
+                    });
+                    const amount = Number(userData['amount']) + Number(gameTable['amount']);
+                    userData['amount'] = String(amount);
+                    console.log('userData', userData);
+                    await data_source_1.default.getRepository(user_entity_1.User).save(userData);
                 });
-                const amount = Number(userData['amount']) + Number(gameTable['amount']);
-                userData['amount'] = String(amount);
-                console.log('userData', userData);
-                await data_source_1.default.getRepository(user_entity_1.User).save(userData);
-            });
-            setTimeout(() => {
-                const io = (0, socket_1.getIO)();
-                io.emit('create_battle', { title: 'Create Game' });
-            }, 1000);
-            return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Game Canceled.", savedData);
+                setTimeout(() => {
+                    const io = (0, socket_1.getIO)();
+                    io.emit('create_battle', { title: 'Create Game' });
+                }, 1000);
+                return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Game Canceled.", savedData);
+            }
+            else {
+                return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.BAD_REQUEST, 'Please Update Result Do Not Cancel The Game Opponent Player Already Update Game Result.');
+            }
         }
         catch (error) {
             console.error('Win game result user can upload it : ', error);
@@ -443,6 +477,12 @@ class GameController {
             });
             if (!gameTable) {
                 return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.NOT_FOUND, 'Game table not found');
+            }
+            const existingGameCode = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).findOne({
+                where: { game_code: game_code }
+            });
+            if (existingGameCode) {
+                return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.CONFLICT, 'This code already exists.');
             }
             gameTable['game_code'] = game_code;
             const savedData = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).save(gameTable);
