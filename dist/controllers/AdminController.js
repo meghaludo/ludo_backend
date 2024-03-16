@@ -15,6 +15,8 @@ const contactUs_entity_1 = require("../entity/contactUs.entity");
 const gameTable_entity_1 = require("../entity/gameTable.entity");
 const adminCommission_entity_1 = require("../entity/adminCommission.entity");
 const referCommission_entity_1 = require("../entity/referCommission.entity");
+const gamePlayer_entity_1 = require("../entity/gamePlayer.entity");
+const gameStatus_1 = require("../constants/gameStatus");
 class AdminController {
     async updateAdmin(req, res) {
         try {
@@ -282,6 +284,40 @@ class AdminController {
             const commissionDetails = await data_source_1.default.getRepository(referCommission_entity_1.ReferCommission).find();
             const referCommission = commissionDetails?.length > 0 ? commissionDetails[0] : {};
             return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Get Refer Commission Details Successfully.", referCommission);
+        }
+        catch (error) {
+            console.log('error', error);
+            return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, message_1.INTERNAL_SERVER_ERROR, error);
+        }
+    }
+    // admin upload custom result
+    async verifyResult(req, res) {
+        try {
+            const resultDetails = req?.body;
+            const gameDetails = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).findOne({
+                where: { id: resultDetails.game_table_id }
+            });
+            resultDetails?.playerDetails?.map(async (element) => {
+                const playerDetails = await data_source_1.default.getRepository(gamePlayer_entity_1.GamePlayer).findOne({
+                    where: { p_id: element.id, game_table_id: resultDetails.game_table_id }
+                });
+                playerDetails['p_status'] = element?.status;
+                const updatePlayer = await data_source_1.default.getRepository(gamePlayer_entity_1.GamePlayer).save(playerDetails);
+                if (updatePlayer['p_status'] == '6') {
+                    const userDetails = await data_source_1.default.getRepository(user_entity_1.User).findOne({
+                        where: { id: element?.id }
+                    });
+                    if (gameDetails['amount'] == '0' || !gameDetails['amount']) {
+                        gameDetails['amount'] = '0';
+                    }
+                    const totalAmount = Number(userDetails['amount']) + Number(gameDetails['amount']);
+                    userDetails['amount'] = String(totalAmount);
+                    await data_source_1.default.getRepository(user_entity_1.User).save(userDetails);
+                }
+            });
+            gameDetails['status'] = gameStatus_1.GameStatus.Completed;
+            const updateGameStatus = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).save(gameDetails);
+            return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Get Refer Commission Details Successfully.", updateGameStatus);
         }
         catch (error) {
             console.log('error', error);

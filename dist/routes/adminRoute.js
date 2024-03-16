@@ -25,4 +25,6 @@ adminRoute.get("/get-commission", adminController.getAdminCommission);
 // admin refer commission details
 adminRoute.post("/refer-add-edit-commission", adminController.addEditReferCommission);
 adminRoute.get("/refer-get-commission", adminController.getReferAdminCommission);
+// custom result update for admin side 
+adminRoute.post("/verify-result", adminController.verifyResult);
 exports.default = adminRoute;
