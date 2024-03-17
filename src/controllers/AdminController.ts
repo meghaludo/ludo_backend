@@ -365,23 +365,52 @@ export class AdminController {
                     where: { p_id: element.id, game_table_id: resultDetails.game_table_id }
                 });
 
-                playerDetails['p_status'] = element?.status;
+                if(playerDetails['p_status'] != '6' && element?.status == '6') {
+                    playerDetails['p_status'] = element?.status;
 
-                const updatePlayer = await AppDataSource.getRepository(GamePlayer).save(playerDetails);
-
-                if (updatePlayer['p_status'] == '6') {
-                    const userDetails: any = await AppDataSource.getRepository(User).findOne({
-                        where: { id: element?.id }
-                    });
-
-                    if (gameDetails['amount'] == '0' || !gameDetails['amount']) {
-                        gameDetails['amount'] = '0';
+                    const updatePlayer = await AppDataSource.getRepository(GamePlayer).save(playerDetails);
+    
+                    if (updatePlayer['p_status'] == '6') {
+                        const userDetails: any = await AppDataSource.getRepository(User).findOne({
+                            where: { id: element?.id }
+                        });
+    
+                        if (gameDetails['winner_amount'] == '0' || !gameDetails['winner_amount']) {
+                            gameDetails['winner_amount'] = '0';
+                        }
+                        const totalAmount = Number(userDetails['amount']) + Number(gameDetails['winner_amount']);
+    
+                        userDetails['amount'] = String(totalAmount);
+    
+                        await AppDataSource.getRepository(User).save(userDetails);
                     }
-                    const totalAmount = Number(userDetails['amount']) + Number(gameDetails['amount']);
+                } if (playerDetails['p_status'] == '6' && element?.status == '6') {
+                    playerDetails['p_status'] = element?.status;
 
-                    userDetails['amount'] = String(totalAmount);
+                    await AppDataSource.getRepository(GamePlayer).save(playerDetails);
+                } if (playerDetails['p_status'] == '6' && element?.status == '7') {
+                    playerDetails['p_status'] = element?.status;
 
-                    await AppDataSource.getRepository(User).save(userDetails);
+                    const updatePlayer = await AppDataSource.getRepository(GamePlayer).save(playerDetails);
+    
+                    if (updatePlayer['p_status'] == '7') {
+                        const userDetails: any = await AppDataSource.getRepository(User).findOne({
+                            where: { id: element?.id }
+                        });
+    
+                        if (gameDetails['winner_amount'] == '0' || !gameDetails['winner_amount']) {
+                            gameDetails['winner_amount'] = '0';
+                        }
+                        const totalAmount = Number(userDetails['amount']) - Number(gameDetails['winner_amount']);
+    
+                        userDetails['amount'] = String(totalAmount);
+    
+                        await AppDataSource.getRepository(User).save(userDetails);
+                    }
+                } else {
+                    playerDetails['p_status'] = element?.status;
+
+                    await AppDataSource.getRepository(GamePlayer).save(playerDetails);
                 }
             });
 

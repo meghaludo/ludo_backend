@@ -98,7 +98,7 @@ export class AuthController {
 
     // verify OTP
     public async verifyOTP(req: any, res: any) {
-        const { userName , otp } = req?.body;
+        const { userName, otp } = req?.body;
         try {
             const mobileLogin: any = await AppDataSource.getRepository(User).findOne({
                 where: { mobile_no: userName }
@@ -108,7 +108,7 @@ export class AuthController {
                 return errorResponse(res, StatusCodes.NOT_FOUND, 'User is Block Please contact To Administrator');
             }
 
-            if(mobileLogin['otp'] == String(otp)) {
+            if (mobileLogin['otp'] == String(otp)) {
                 mobileLogin['otp'] = null;
                 const userData = await AppDataSource.getRepository(User).save(mobileLogin);
 
@@ -166,24 +166,23 @@ export class AuthController {
             // enterUserData['password'] = cryptoPassword;
             enterUserData['refer_code'] = generateRandomString(7);
 
+            const userCreate = await AppDataSource.getRepository(User).save(enterUserData);
+
             if (!!userData?.code) {
                 const userWithCode = await AppDataSource.getRepository(User).findOne({
                     where: { refer_code: userData['code'] }
                 });
 
-
                 if (userWithCode) {
                     enterUserData['reference_user_id'] = userWithCode?.id;
-                    // const referTableData = {
-                    //     user_id: userCreate?.id,
-                    //     refrence_user_id: userWithCode?.id,
-                    //     code: userData['code']
-                    // }
-                    // await AppDataSource.getRepository(ReferTable).save(referTableData);
+                    const referTableData = {
+                        user_id: userCreate?.id,
+                        refrence_user_id: userWithCode?.id,
+                        code: userData['code']
+                    }
+                    await AppDataSource.getRepository(ReferTable).save(referTableData);
                 }
             }
-
-            const userCreate = await AppDataSource.getRepository(User).save(enterUserData);
 
             return sendResponse(res, StatusCodes.OK, 'Login Successfully', userCreate);
         } catch (error) {

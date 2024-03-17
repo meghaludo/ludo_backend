@@ -12,6 +12,7 @@ const generateString_1 = require("../core/generateString");
 const data_source_1 = __importDefault(require("../data-source"));
 const user_entity_1 = require("../entity/user.entity");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const referUser_entiry_1 = require("../entity/referUser.entiry");
 const axios_1 = __importDefault(require("axios"));
 class AuthController {
     // Login user
@@ -136,21 +137,21 @@ class AuthController {
             // const cryptoPassword = generateHashPassword(userData['password']);
             // enterUserData['password'] = cryptoPassword;
             enterUserData['refer_code'] = (0, generateString_1.generateRandomString)(7);
+            const userCreate = await data_source_1.default.getRepository(user_entity_1.User).save(enterUserData);
             if (!!userData?.code) {
                 const userWithCode = await data_source_1.default.getRepository(user_entity_1.User).findOne({
                     where: { refer_code: userData['code'] }
                 });
                 if (userWithCode) {
                     enterUserData['reference_user_id'] = userWithCode?.id;
-                    // const referTableData = {
-                    //     user_id: userCreate?.id,
-                    //     refrence_user_id: userWithCode?.id,
-                    //     code: userData['code']
-                    // }
-                    // await AppDataSource.getRepository(ReferTable).save(referTableData);
+                    const referTableData = {
+                        user_id: userCreate?.id,
+                        refrence_user_id: userWithCode?.id,
+                        code: userData['code']
+                    };
+                    await data_source_1.default.getRepository(referUser_entiry_1.ReferTable).save(referTableData);
                 }
             }
-            const userCreate = await data_source_1.default.getRepository(user_entity_1.User).save(enterUserData);
             return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, 'Login Successfully', userCreate);
         }
         catch (error) {

@@ -12,6 +12,7 @@ import { INTERNAL_SERVER_ERROR } from "../constants/message";
 import { ReasonMaster } from '../entity/gameCancelReasonMaster.entity';
 import { ReferCommission } from '../entity/referCommission.entity';
 import { UserWallet } from '../entity/wallet.entity';
+import { ReferTable } from '../entity/referUser.entiry';
 
 export class GameController {
     // create game
@@ -343,10 +344,11 @@ export class GameController {
                 await AppDataSource.getRepository(GameTable).save(gameDetails);
             }
 
-            const user: any = await AppDataSource.getRepository(User).findOne({
-                where: { id: req?.userId }
+            const user: any = await AppDataSource.getRepository(ReferTable).findOne({
+                where: { user_id: req?.userId }
             });
 
+            console.log('user && (user?.reference_user_id != 0', user && (user?.reference_user_id != 0))
             // refer user logic 
             if (user && (user?.reference_user_id != 0)) {
 
@@ -372,8 +374,21 @@ export class GameController {
                     where: { id: Number(user.reference_user_id) }
                 });
 
+                console.log('referUserreferUserreferUser', referUser)
+
                 console.log('referUserreferUser', referUser)
-                referUser.amount = Number(referUser?.amount) + Number(referCommissionRs);
+                const commission =  Number(referUser?.amount) + Number(referCommissionRs);
+
+                referUser.amount =String(commission);
+
+                const payload = {
+                    user_id: referUser?.id,
+                    amount: String(commission),
+                    payment_type: 'Refer_Amount',
+                    status: 1
+                }
+                await AppDataSource.getRepository(UserWallet).save(payload); 
+
                 await AppDataSource.getRepository(User).save(referUser);
             }
 
@@ -466,6 +481,51 @@ export class GameController {
 
             //     await AppDataSource.getRepository(GameTable).save(gameDetails);
             // }
+
+            const user: any = await AppDataSource.getRepository(ReferTable).findOne({
+                where: { user_id: req?.userId }
+            });
+            console.log('user && (user?.reference_user_id != 0', user && (user?.reference_user_id != 0))
+            // refer user logic 
+            if (user && (user?.reference_user_id != 0)) {
+
+                const gameDetail: any = await AppDataSource.getRepository(GameTable).findOne({
+                    where: { id: Number(loosePayload?.game_table_id) }
+                });
+
+                const adminCommission: any = await AppDataSource.getRepository(AdminCommission).findOne({
+                    where: { is_active: 1 }
+                });
+
+                const adminCommissionRs = ((Number(gameDetail?.amount) * 2) * Number(adminCommission?.commission) || 0) / 100;
+
+                const referCommission: any = await AppDataSource.getRepository(ReferCommission).findOne({
+                    where: { is_active: 1 }
+                });
+
+                const referCommissionRs = (Number(adminCommissionRs) * Number(referCommission?.commission) || 0) / 100;
+
+                console.log('user.reference_user_id', user.reference_user_id);
+
+                const referUser: any = await AppDataSource.getRepository(User).findOne({
+                    where: { id: Number(user.reference_user_id) }
+                });
+
+                console.log('referUserreferUserreferUser', referUser)
+                const commission = Number(referUser?.amount || 0) + Number(referCommissionRs || 0);
+
+                referUser.amount = String(commission);
+
+                const payload = {
+                    user_id: referUser?.id,
+                    amount: String(commission),
+                    payment_type: 'Refer_Amount',
+                    status: 1
+                }
+                await AppDataSource.getRepository(UserWallet).save(payload); 
+
+                await AppDataSource.getRepository(User).save(referUser);
+            }
 
             setTimeout(() => {
                 const io = getIO();
