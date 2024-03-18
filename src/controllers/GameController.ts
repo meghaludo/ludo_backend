@@ -344,13 +344,24 @@ export class GameController {
                 await AppDataSource.getRepository(GameTable).save(gameDetails);
             }
 
-            const user: any = await AppDataSource.getRepository(ReferTable).findOne({
-                where: { user_id: req?.userId }
+
+            const winnerUserData = await AppDataSource.getRepository(GamePlayer).findOne({
+                where: { game_table_id: Number(winPayload?.game_table_id), p_status: String(PlayerStatus.Winner) }
             });
+
+            console.log('winnerUserData', winnerUserData)
+
+            const user: any = await AppDataSource.getRepository(ReferTable).findOne({
+                where: { user_id: winnerUserData?.p_id }
+            });
+
+            // const user: any = await AppDataSource.getRepository(ReferTable).findOne({
+            //     where: { user_id: req?.userId }
+            // });
 
             console.log('user && (user?.reference_user_id != 0', user && (user?.reference_user_id != 0))
             // refer user logic 
-            if (user && (user?.reference_user_id != 0)) {
+            if (user && (user?.refrence_user_id != 0)) {
 
                 const gameDetail: any = await AppDataSource.getRepository(GameTable).findOne({
                     where: { id: Number(winPayload?.game_table_id) }
@@ -368,26 +379,27 @@ export class GameController {
 
                 const referCommissionRs = (Number(adminCommissionRs) * Number(referCommission?.commission) || 0) / 100;
 
-                console.log('user.reference_user_id', user.reference_user_id);
+                console.log('user.refrence_user_id', user.refrence_user_id);
 
                 const referUser: any = await AppDataSource.getRepository(User).findOne({
-                    where: { id: Number(user.reference_user_id) }
+                    where: { id: Number(user.refrence_user_id) }
                 });
 
                 console.log('referUserreferUserreferUser', referUser)
 
                 console.log('referUserreferUser', referUser)
-                const commission =  Number(referUser?.amount) + Number(referCommissionRs);
+                const commission = Number(referUser?.amount) + Number(referCommissionRs);
 
-                referUser.amount =String(commission);
+                referUser.amount = String(commission);
 
                 const payload = {
                     user_id: referUser?.id,
-                    amount: String(commission),
+                    amount: String(referCommissionRs),
                     payment_type: 'Refer_Amount',
                     status: 1
                 }
-                await AppDataSource.getRepository(UserWallet).save(payload); 
+                
+                await AppDataSource.getRepository(UserWallet).save(payload);
 
                 await AppDataSource.getRepository(User).save(referUser);
             }
@@ -482,12 +494,21 @@ export class GameController {
             //     await AppDataSource.getRepository(GameTable).save(gameDetails);
             // }
 
-            const user: any = await AppDataSource.getRepository(ReferTable).findOne({
-                where: { user_id: req?.userId }
+            const winnerUserData = await AppDataSource.getRepository(GamePlayer).findOne({
+                where: { game_table_id: Number(loosePayload?.game_table_id), p_status: String(PlayerStatus.Winner) }
             });
-            console.log('user && (user?.reference_user_id != 0', user && (user?.reference_user_id != 0))
+
+            console.log('winnerUserData', winnerUserData);
+            const user: any = await AppDataSource.getRepository(ReferTable).findOne({
+                where: { user_id: winnerUserData?.p_id }
+            });
+
+            // const user: any = await AppDataSource.getRepository(ReferTable).findOne({
+            //     where: { user_id: req?.userId }
+            // });
+            console.log('user && (user?.reference_user_id != 0', user, user && (user?.refrence_user_id != 0))
             // refer user logic 
-            if (user && (user?.reference_user_id != 0)) {
+            if (user && (user?.refrence_user_id != 0)) {
 
                 const gameDetail: any = await AppDataSource.getRepository(GameTable).findOne({
                     where: { id: Number(loosePayload?.game_table_id) }
@@ -498,17 +519,17 @@ export class GameController {
                 });
 
                 const adminCommissionRs = ((Number(gameDetail?.amount) * 2) * Number(adminCommission?.commission) || 0) / 100;
-
+                console.log('adminCommissionRs', adminCommissionRs)
                 const referCommission: any = await AppDataSource.getRepository(ReferCommission).findOne({
                     where: { is_active: 1 }
                 });
 
                 const referCommissionRs = (Number(adminCommissionRs) * Number(referCommission?.commission) || 0) / 100;
-
-                console.log('user.reference_user_id', user.reference_user_id);
+                console.log('referCommissionRs', referCommissionRs)
+                console.log('user.reference_user_id', user, user.refrence_user_id);
 
                 const referUser: any = await AppDataSource.getRepository(User).findOne({
-                    where: { id: Number(user.reference_user_id) }
+                    where: { id: Number(user.refrence_user_id) }
                 });
 
                 console.log('referUserreferUserreferUser', referUser)
@@ -518,11 +539,11 @@ export class GameController {
 
                 const payload = {
                     user_id: referUser?.id,
-                    amount: String(commission),
+                    amount: String(referCommissionRs),
                     payment_type: 'Refer_Amount',
                     status: 1
                 }
-                await AppDataSource.getRepository(UserWallet).save(payload); 
+                await AppDataSource.getRepository(UserWallet).save(payload);
 
                 await AppDataSource.getRepository(User).save(referUser);
             }

@@ -341,11 +341,19 @@ class UserController {
             const getReferCommission = await data_source_1.default.getRepository(referCommission_entity_1.ReferCommission).find();
             const referCommission = getReferCommission?.length > 0 ? getReferCommission[0] : {};
             const referUserData = await data_source_1.default.getRepository(referUser_entiry_1.ReferTable).find({
-                where: { user_id: req?.userId }
+                where: { refrence_user_id: req?.userId }
+            });
+            const getReferAmount = await data_source_1.default.getRepository(wallet_entity_1.UserWallet).find({
+                where: { user_id: Number(req?.userId), payment_type: 'Refer_Amount' }
+            });
+            let totalAmount = 0;
+            getReferAmount?.map((element) => {
+                totalAmount = totalAmount + Number(element?.amount);
             });
             const payload = {
                 commission: referCommission,
                 referUser: referUserData?.length,
+                referAmount: totalAmount
             };
             return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "User refer details successfully get", payload);
         }
