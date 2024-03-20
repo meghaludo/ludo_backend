@@ -308,9 +308,9 @@ class UserController {
             const walletAmount = await data_source_1.default.getRepository(withdraw_entity_1.Withdraw).findOne({
                 where: { user_id: req?.userId }
             });
-            if (!walletAmount) {
-                (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.BAD_REQUEST, "Bank Details Not Found");
-            }
+            // if (!walletAmount) {
+            // errorResponse(res, StatusCodes.BAD_REQUEST, "Bank Details Not Found");
+            // }
             return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "User Wallet Details Successfully Found", walletAmount);
         }
         catch (error) {

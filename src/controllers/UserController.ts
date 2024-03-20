@@ -337,13 +337,13 @@ export class UserController {
     // get user wallet Amount
     public async getAccountDetails(req: any, res: any) {
         try {
-            const walletAmount = await AppDataSource.getRepository(Withdraw).findOne({
+            const walletAmount : any = await AppDataSource.getRepository(Withdraw).findOne({
                 where: { user_id: req?.userId }
             });
 
-            if (!walletAmount) {
-                errorResponse(res, StatusCodes.BAD_REQUEST, "Bank Details Not Found");
-            }
+            // if (!walletAmount) {
+                // errorResponse(res, StatusCodes.BAD_REQUEST, "Bank Details Not Found");
+            // }
 
             return sendResponse(res, StatusCodes.OK, "User Wallet Details Successfully Found", walletAmount);
         } catch (error) {
