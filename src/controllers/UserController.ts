@@ -1,4 +1,4 @@
-import { ReferCommission } from './../entity/referCommission.entity';
+import { ReferCommission } from '../entity/referCommission.entity';
 import { StatusCodes } from "http-status-codes";
 import { errorResponse, sendResponse } from "../utils/responseUtil";
 import AppDataSource from "../data-source";
@@ -379,8 +379,11 @@ export class UserController {
         try {
             const getReferCommission: any[] = await AppDataSource.getRepository(ReferCommission).find();
 
-            const referCommission: any = getReferCommission?.length > 0 ? getReferCommission[0] : {}
+            console.log('getReferCommission', getReferCommission);
 
+            const referCommission: any = getReferCommission?.length > 0 ? getReferCommission[0] : {}
+            console.log('referCommission', referCommission);
+            
             const referUserData: any[] = await AppDataSource.getRepository(ReferTable).find({
                 where: { refrence_user_id : req?.userId }
             });

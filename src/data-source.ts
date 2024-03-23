@@ -13,7 +13,7 @@ import { DataSource } from "typeorm";
 //   // entities: ["dist/entity/*.entity.js"],
 //   // entities: ["entity/*.entity.{ts,js}"],
 //   logging: true,
-//   synchronize: false,
+//   synchronize: true,
 // });
 
 export const AppDataSource = new DataSource({
