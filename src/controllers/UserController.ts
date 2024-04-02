@@ -1,4 +1,4 @@
-import { ReferCommission } from '../entity/referCommission.entity';
+import { ReferCommission } from './../entity/referCommission.entity';
 import { StatusCodes } from "http-status-codes";
 import { errorResponse, sendResponse } from "../utils/responseUtil";
 import AppDataSource from "../data-source";
@@ -337,13 +337,13 @@ export class UserController {
     // get user wallet Amount
     public async getAccountDetails(req: any, res: any) {
         try {
-            const walletAmount : any = await AppDataSource.getRepository(Withdraw).findOne({
+            const walletAmount = await AppDataSource.getRepository(Withdraw).findOne({
                 where: { user_id: req?.userId }
             });
 
-            // if (!walletAmount) {
-                // errorResponse(res, StatusCodes.BAD_REQUEST, "Bank Details Not Found");
-            // }
+            if (!walletAmount) {
+                errorResponse(res, StatusCodes.BAD_REQUEST, "Bank Details Not Found");
+            }
 
             return sendResponse(res, StatusCodes.OK, "User Wallet Details Successfully Found", walletAmount);
         } catch (error) {
@@ -379,11 +379,8 @@ export class UserController {
         try {
             const getReferCommission: any[] = await AppDataSource.getRepository(ReferCommission).find();
 
-            console.log('getReferCommission', getReferCommission);
-
             const referCommission: any = getReferCommission?.length > 0 ? getReferCommission[0] : {}
-            console.log('referCommission', referCommission);
-            
+
             const referUserData: any[] = await AppDataSource.getRepository(ReferTable).find({
                 where: { refrence_user_id : req?.userId }
             });

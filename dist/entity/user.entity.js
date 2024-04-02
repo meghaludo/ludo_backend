@@ -14,6 +14,7 @@ const typeorm_1 = require("typeorm");
 let User = class User {
     id;
     full_name;
+    game_key;
     ludo_name;
     mobile_no;
     email;
@@ -35,6 +36,10 @@ __decorate([
     (0, typeorm_1.Column)({ type: 'varchar', length: 255, nullable: true }),
     __metadata("design:type", String)
 ], User.prototype, "full_name", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', length: 255, nullable: true }),
+    __metadata("design:type", String)
+], User.prototype, "game_key", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'varchar', length: 255, nullable: true }),
     __metadata("design:type", String)

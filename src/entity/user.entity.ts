@@ -7,6 +7,9 @@ export class User {
 
     @Column({ type: 'varchar', length: 255, nullable: true })
     full_name!: string;
+    
+    @Column({ type: 'varchar', length: 255, nullable: true })
+    game_key!: string;
 
     @Column({ type: 'varchar', length: 255, nullable: true })
     ludo_name!: string;

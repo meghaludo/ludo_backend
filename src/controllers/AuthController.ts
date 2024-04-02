@@ -2,7 +2,7 @@ import { StatusCodes } from "http-status-codes";
 import { errorResponse, sendResponse } from "../utils/responseUtil";
 import { INTERNAL_SERVER_ERROR } from "../constants/message";
 import { generateHashPassword, matchPassword } from "../core/generateHashPassword";
-import { generateRandomString } from "../core/generateString";
+import { generateRandomNumberString, generateRandomString } from "../core/generateString";
 import AppDataSource from "../data-source";
 import { User } from "../entity/user.entity";
 import jwt from 'jsonwebtoken';
@@ -160,6 +160,7 @@ export class AuthController {
                 mobile_no: userData?.mobile_no || null,
                 email: userData?.email || null,
                 password: userData?.password || null,
+                game_key: `megaludo24${generateRandomNumberString(15)}`
             }
 
             // const cryptoPassword = generateHashPassword(userData['password']);

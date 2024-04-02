@@ -1,4 +1,17 @@
 import { DataSource } from "typeorm";
+import { AdminCommission } from "./entity/adminCommission.entity";
+import { ContactUs } from "./entity/contactUs.entity";
+import { GamePlayer } from "./entity/gamePlayer.entity";
+import { ReasonMaster } from "./entity/gameCancelReasonMaster.entity";
+import { GameTable } from "./entity/gameTable.entity";
+import { User } from "./entity/user.entity";
+import { UserWallet } from "./entity/wallet.entity";
+import { Withdraw } from "./entity/withdraw.entity";
+import { LudoGameResult } from "./entity/ludoGameResult.entity";
+import { ReferCommission } from "./entity/referCommission.entity";
+import { ReferTable } from "./entity/referUser.entiry";
+import { UserNotification } from "./entity/userNotification.entity";
+import { Notification } from "./entity/notifucation.entity";
 
 // export const AppDataSource = new DataSource({
 //   type: "mysql",
@@ -13,7 +26,7 @@ import { DataSource } from "typeorm";
 //   // entities: ["dist/entity/*.entity.js"],
 //   // entities: ["entity/*.entity.{ts,js}"],
 //   logging: true,
-//   synchronize: true,
+//   synchronize: false,
 // });
 
 export const AppDataSource = new DataSource({
@@ -26,7 +39,22 @@ export const AppDataSource = new DataSource({
   // database: "ludo_game",
   database: "ludo_game",
 //  entities: ["src/entity/{*.ts, *.js}"],
-  entities: ["dist/entity/*.entity.js"],
+  // entities: ["dist/entity/*.entity.js"],
+    entities: [
+    AdminCommission,
+    ContactUs,
+    ReasonMaster,
+    GamePlayer,
+    GameTable,
+    LudoGameResult,
+    Notification,
+    ReferCommission,
+    ReferTable,
+    User,
+    UserNotification,
+    UserWallet,
+    Withdraw
+  ],
   // entities: ["entity/*.entity.{ts,js}"],
   logging: true,
   synchronize: true,

@@ -4,7 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserController = void 0;
-const referCommission_entity_1 = require("../entity/referCommission.entity");
+const referCommission_entity_1 = require("./../entity/referCommission.entity");
 const http_status_codes_1 = require("http-status-codes");
 const responseUtil_1 = require("../utils/responseUtil");
 const data_source_1 = __importDefault(require("../data-source"));
@@ -308,9 +308,9 @@ class UserController {
             const walletAmount = await data_source_1.default.getRepository(withdraw_entity_1.Withdraw).findOne({
                 where: { user_id: req?.userId }
             });
-            // if (!walletAmount) {
-            // errorResponse(res, StatusCodes.BAD_REQUEST, "Bank Details Not Found");
-            // }
+            if (!walletAmount) {
+                (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.BAD_REQUEST, "Bank Details Not Found");
+            }
             return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "User Wallet Details Successfully Found", walletAmount);
         }
         catch (error) {
@@ -339,9 +339,7 @@ class UserController {
     async getReferUserDetails(req, res) {
         try {
             const getReferCommission = await data_source_1.default.getRepository(referCommission_entity_1.ReferCommission).find();
-            console.log('getReferCommission', getReferCommission);
             const referCommission = getReferCommission?.length > 0 ? getReferCommission[0] : {};
-            console.log('referCommission', referCommission);
             const referUserData = await data_source_1.default.getRepository(referUser_entiry_1.ReferTable).find({
                 where: { refrence_user_id: req?.userId }
             });

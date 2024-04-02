@@ -133,6 +133,7 @@ class AuthController {
                 mobile_no: userData?.mobile_no || null,
                 email: userData?.email || null,
                 password: userData?.password || null,
+                game_key: `megaludo24${(0, generateString_1.generateRandomNumberString)(15)}`
             };
             // const cryptoPassword = generateHashPassword(userData['password']);
             // enterUserData['password'] = cryptoPassword;
