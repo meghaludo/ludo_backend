@@ -12,6 +12,7 @@ import { ReferCommission } from "../entity/referCommission.entity";
 import { ReferTable } from "../entity/referUser.entiry";
 import { GamePlayer } from "../entity/gamePlayer.entity";
 import { GameStatus } from "../constants/gameStatus";
+import { ILike } from "typeorm";
 
 export class AdminController {
     public async updateAdmin(req: any, res: any) {
@@ -44,8 +45,26 @@ export class AdminController {
     // get user list
     public async getUserList(req: any, res: any) {
         try {
+
+            let whereCondition: any = {};
+
+            if (req?.query?.search) {
+                whereCondition = [
+                    {
+                        full_name: ILike(`%${req?.query?.search}%`),
+                        role: 0,
+                    },
+                    {
+                        game_key: ILike(`%${req?.query?.search}%`),
+                        role: 0
+                    }
+                ]
+            } else {
+                whereCondition = { role: 0 };
+            }
+
             const userList = await AppDataSource.getRepository(User).find({
-                where: { role: 0 }
+                where: whereCondition
             });
             return sendResponse(res, StatusCodes.OK, "User List Find Successfully", userList);
         } catch (error) {
@@ -352,6 +371,79 @@ export class AdminController {
     }
 
     // admin upload custom result
+    // public async verifyResult(req: any, res: any) {
+    //     try {
+    //         const resultDetails = req?.body;
+
+    //         const gameDetails: any = await AppDataSource.getRepository(GameTable).findOne({
+    //             where: { id: resultDetails.game_table_id }
+    //         });
+
+    //         resultDetails?.playerDetails?.map(async (element: any) => {
+    //             const playerDetails: any = await AppDataSource.getRepository(GamePlayer).findOne({
+    //                 where: { p_id: element.id, game_table_id: resultDetails.game_table_id }
+    //             });
+
+    //             if (playerDetails['p_status'] != '6' && element?.status == '6') {
+    //                 playerDetails['p_status'] = element?.status;
+
+    //                 const updatePlayer = await AppDataSource.getRepository(GamePlayer).save(playerDetails);
+
+    //                 if (updatePlayer['p_status'] == '6') {
+    //                     const userDetails: any = await AppDataSource.getRepository(User).findOne({
+    //                         where: { id: element?.id }
+    //                     });
+
+    //                     if (gameDetails['winner_amount'] == '0' || !gameDetails['winner_amount']) {
+    //                         gameDetails['winner_amount'] = '0';
+    //                     }
+    //                     const totalAmount = Number(userDetails['amount']) + Number(gameDetails['winner_amount']);
+
+    //                     userDetails['amount'] = String(totalAmount);
+
+    //                     await AppDataSource.getRepository(User).save(userDetails);
+    //                 }
+    //             } if (playerDetails['p_status'] == '6' && element?.status == '6') {
+    //                 playerDetails['p_status'] = element?.status;
+
+    //                 await AppDataSource.getRepository(GamePlayer).save(playerDetails);
+    //             } if (playerDetails['p_status'] == '6' && element?.status == '7') {
+    //                 playerDetails['p_status'] = element?.status;
+
+    //                 const updatePlayer = await AppDataSource.getRepository(GamePlayer).save(playerDetails);
+
+    //                 if (updatePlayer['p_status'] == '7') {
+    //                     const userDetails: any = await AppDataSource.getRepository(User).findOne({
+    //                         where: { id: element?.id }
+    //                     });
+
+    //                     if (gameDetails['winner_amount'] == '0' || !gameDetails['winner_amount']) {
+    //                         gameDetails['winner_amount'] = '0';
+    //                     }
+    //                     const totalAmount = Number(userDetails['amount']) - Number(gameDetails['winner_amount']);
+
+    //                     userDetails['amount'] = String(totalAmount);
+
+    //                     await AppDataSource.getRepository(User).save(userDetails);
+    //                 }
+    //             } else {
+    //                 playerDetails['p_status'] = element?.status;
+
+    //                 await AppDataSource.getRepository(GamePlayer).save(playerDetails);
+    //             }
+    //         });
+
+    //         gameDetails['status'] = GameStatus.Completed;
+
+    //         const updateGameStatus = await AppDataSource.getRepository(GameTable).save(gameDetails);
+
+    //         return sendResponse(res, StatusCodes.OK, "Get Refer Commission Details Successfully.", updateGameStatus);
+    //     } catch (error) {
+    //         console.log('error', error);
+    //         return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
+    //     }
+    // }
+
     public async verifyResult(req: any, res: any) {
         try {
             const resultDetails = req?.body;
@@ -360,65 +452,148 @@ export class AdminController {
                 where: { id: resultDetails.game_table_id }
             });
 
-            resultDetails?.playerDetails?.map(async (element: any) => {
+            const playerList = resultDetails?.playerDetails;
+
+            const playerDetailsLegth = playerList.length;
+
+            for (let i = 0; i < playerDetailsLegth; i++) {
                 const playerDetails: any = await AppDataSource.getRepository(GamePlayer).findOne({
-                    where: { p_id: element.id, game_table_id: resultDetails.game_table_id }
+                    where: { p_id: playerList[i].id, game_table_id: resultDetails.game_table_id }
                 });
 
-                if(playerDetails['p_status'] != '6' && element?.status == '6') {
-                    playerDetails['p_status'] = element?.status;
-
-                    const updatePlayer = await AppDataSource.getRepository(GamePlayer).save(playerDetails);
-    
-                    if (updatePlayer['p_status'] == '6') {
-                        const userDetails: any = await AppDataSource.getRepository(User).findOne({
-                            where: { id: element?.id }
-                        });
-    
-                        if (gameDetails['winner_amount'] == '0' || !gameDetails['winner_amount']) {
-                            gameDetails['winner_amount'] = '0';
-                        }
-                        const totalAmount = Number(userDetails['amount']) + Number(gameDetails['winner_amount']);
-    
-                        userDetails['amount'] = String(totalAmount);
-    
-                        await AppDataSource.getRepository(User).save(userDetails);
-                    }
-                } if (playerDetails['p_status'] == '6' && element?.status == '6') {
-                    playerDetails['p_status'] = element?.status;
+                if (playerDetails['p_status'] != '6' && playerList[i].status == '6') {
+                    playerDetails['p_status'] = playerList[i]?.status;
 
                     await AppDataSource.getRepository(GamePlayer).save(playerDetails);
-                } if (playerDetails['p_status'] == '6' && element?.status == '7') {
-                    playerDetails['p_status'] = element?.status;
 
-                    const updatePlayer = await AppDataSource.getRepository(GamePlayer).save(playerDetails);
-    
-                    if (updatePlayer['p_status'] == '7') {
-                        const userDetails: any = await AppDataSource.getRepository(User).findOne({
-                            where: { id: element?.id }
-                        });
-    
-                        if (gameDetails['winner_amount'] == '0' || !gameDetails['winner_amount']) {
-                            gameDetails['winner_amount'] = '0';
-                        }
-                        const totalAmount = Number(userDetails['amount']) - Number(gameDetails['winner_amount']);
-    
-                        userDetails['amount'] = String(totalAmount);
-    
-                        await AppDataSource.getRepository(User).save(userDetails);
-                    }
+                    const userDetails: any = await AppDataSource.getRepository(User).findOne({
+                        where: { id: playerList[i]?.id }
+                    });
+
+                    let winningAmount = !gameDetails['winner_amount'] ? '0' : gameDetails['winner_amount'];
+
+                    const totalAmount = Number(userDetails['amount']) + Number(winningAmount);
+
+                    userDetails['amount'] = String(totalAmount);
+
+                    await AppDataSource.getRepository(User).save(userDetails);
+
+                } else if (playerDetails['p_status'] == '6' && playerList[i]?.status == '7') {
+                    playerDetails['p_status'] = playerList[i]?.status;
+
+                    await AppDataSource.getRepository(GamePlayer).save(playerDetails);
+
+                    const userDetails: any = await AppDataSource.getRepository(User).findOne({
+                        where: { id: playerList[i]?.id }
+                    });
+
+                    let winningAmount = !gameDetails['winner_amount'] ? '0' : gameDetails['winner_amount'];
+
+                    const totalAmount = Number(userDetails['amount']) - Number(winningAmount);
+
+                    userDetails['amount'] = String(totalAmount);
+
+                    await AppDataSource.getRepository(User).save(userDetails);
                 } else {
-                    playerDetails['p_status'] = element?.status;
+                    playerDetails['p_status'] = playerList[i]?.status;
 
                     await AppDataSource.getRepository(GamePlayer).save(playerDetails);
                 }
-            });
+
+            }
 
             gameDetails['status'] = GameStatus.Completed;
 
             const updateGameStatus = await AppDataSource.getRepository(GameTable).save(gameDetails);
 
             return sendResponse(res, StatusCodes.OK, "Get Refer Commission Details Successfully.", updateGameStatus);
+        } catch (error) {
+            console.log('error', error);
+            return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
+        }
+    }
+
+    // admin add money to user's wallet
+    public async addMoneyToWallet(req: any, res: any) {
+        try {
+
+            if (!req.body['game_key']) {
+                return errorResponse(res, StatusCodes.BAD_REQUEST, "Game key is required");
+            }
+
+            if (!req.body['amount']) {
+                return errorResponse(res, StatusCodes.BAD_REQUEST, "Amount is required");
+            }
+
+            if (req.body['amount'] < 200) {
+                return errorResponse(res, StatusCodes.BAD_REQUEST, "Minimum Amount should be Rs. 200");
+            }
+
+            const userDetails = await AppDataSource.getRepository(User).findOne({
+                where: { game_key: req.body['game_key'] }
+            });
+
+            if (!userDetails) {
+                return errorResponse(res, StatusCodes.NOT_FOUND, 'User Details Not Found');
+            }
+
+            const userWallet = AppDataSource.getRepository(UserWallet).create({
+                amount: req.body['amount'],
+                status: 1,
+                user_id: userDetails['id'],
+                payment_type: 'recharge'
+            });
+
+            await AppDataSource.getRepository(UserWallet).save(userWallet);
+
+            userDetails.amount = String(+userDetails.amount + req.body['amount']);
+            await AppDataSource.getRepository(User).save(userDetails);
+
+            return sendResponse(res, StatusCodes.OK, "Money Added Successfully To User Wallet", null);
+
+        } catch (error) {
+            console.log('error', error);
+            return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
+        }
+    }
+
+    public async removeMoneyToWallet(req: any, res: any) {
+        try {
+
+            if (!req.body['game_key']) {
+                return errorResponse(res, StatusCodes.BAD_REQUEST, "Game key is required");
+            }
+
+            if (!req.body['amount']) {
+                return errorResponse(res, StatusCodes.BAD_REQUEST, "Amount is required");
+            }
+
+            const userDetails = await AppDataSource.getRepository(User).findOne({
+                where: { game_key: req.body['game_key'] }
+            });
+
+            if (!userDetails) {
+                return errorResponse(res, StatusCodes.NOT_FOUND, 'User Details Not Found');
+            }
+
+            if (userDetails.amount < req.body['amount']) {
+                return errorResponse(res, StatusCodes.BAD_REQUEST, "Amount should be less than User's wallet Amount");
+            }
+
+            const userWallet = AppDataSource.getRepository(UserWallet).create({
+                amount: req.body['amount'],
+                status: 1,
+                user_id: userDetails['id'],
+                payment_type: 'recharge_delete'
+            });
+
+            await AppDataSource.getRepository(UserWallet).save(userWallet);
+
+            userDetails.amount = String(+userDetails.amount - req.body['amount']);
+            await AppDataSource.getRepository(User).save(userDetails);
+
+            return sendResponse(res, StatusCodes.OK, "Money Removed Successfully To User Wallet", null);
+
         } catch (error) {
             console.log('error', error);
             return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);

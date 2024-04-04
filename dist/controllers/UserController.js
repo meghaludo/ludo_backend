@@ -344,7 +344,7 @@ class UserController {
                 where: { refrence_user_id: req?.userId }
             });
             const getReferAmount = await data_source_1.default.getRepository(wallet_entity_1.UserWallet).find({
-                where: { user_id: Number(req?.userId), payment_type: 'Refer_Amount' }
+                where: { user_id: Number(req?.userId), payment_type: 'refer' }
             });
             let totalAmount = 0;
             getReferAmount?.map((element) => {

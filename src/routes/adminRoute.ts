@@ -34,4 +34,10 @@ adminRoute.get("/refer-get-commission", adminController.getReferAdminCommission)
 
 // custom result update for admin side 
 adminRoute.post("/verify-result", adminController.verifyResult);
+
+//Add money to user wallet
+adminRoute.post("/add-money-to-wallet", adminController.addMoneyToWallet);
+
+//Remove money from user wallet
+adminRoute.post("/remove-money-from-wallet", adminController.removeMoneyToWallet);
 export default adminRoute;

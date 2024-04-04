@@ -386,7 +386,7 @@ export class UserController {
             });
 
             const getReferAmount : any[] = await AppDataSource.getRepository(UserWallet).find({
-                where : { user_id : Number(req?.userId), payment_type : 'Refer_Amount' }
+                where : { user_id : Number(req?.userId), payment_type : 'refer' }
             });
 
             let totalAmount : number = 0;

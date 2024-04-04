@@ -336,7 +336,7 @@ export class GameController {
                 const payload = {
                     user_id: winnerUser?.id,
                     amount: gameDetails['winner_amount'],
-                    payment_type: 'Win Game',
+                    payment_type: 'win_game',
                     status: 1
                 }
                 await AppDataSource.getRepository(UserWallet).save(payload);
@@ -395,7 +395,7 @@ export class GameController {
                 const payload = {
                     user_id: referUser?.id,
                     amount: String(referCommissionRs),
-                    payment_type: 'Refer_Amount',
+                    payment_type: 'refer',
                     status: 1
                 }
                 
@@ -460,7 +460,7 @@ export class GameController {
             const payload = {
                 user_id: winnerUser?.id,
                 amount: gameDetails['winner_amount'],
-                payment_type: 'Win Game',
+                payment_type: 'win_game',
                 status: 1
             }
             await AppDataSource.getRepository(UserWallet).save(payload);
@@ -540,7 +540,7 @@ export class GameController {
                 const payload = {
                     user_id: referUser?.id,
                     amount: String(referCommissionRs),
-                    payment_type: 'Refer_Amount',
+                    payment_type: 'refer',
                     status: 1
                 }
                 await AppDataSource.getRepository(UserWallet).save(payload);
