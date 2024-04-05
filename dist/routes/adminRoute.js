@@ -31,4 +31,8 @@ adminRoute.post("/verify-result", adminController.verifyResult);
 adminRoute.post("/add-money-to-wallet", adminController.addMoneyToWallet);
 //Remove money from user wallet
 adminRoute.post("/remove-money-from-wallet", adminController.removeMoneyToWallet);
+// add-edit mobile number for the payment
+adminRoute.post('/add-edit-payment-mobile', adminController.addEditPaymentMobile);
+// get payment mobile number
+adminRoute.get('/get-payment-mobile', adminController.getPaymentMobile);
 exports.default = adminRoute;

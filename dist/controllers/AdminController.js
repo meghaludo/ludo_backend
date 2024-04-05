@@ -18,6 +18,7 @@ const referCommission_entity_1 = require("../entity/referCommission.entity");
 const gamePlayer_entity_1 = require("../entity/gamePlayer.entity");
 const gameStatus_1 = require("../constants/gameStatus");
 const typeorm_1 = require("typeorm");
+const paymentMobile_entity_1 = require("../entity/paymentMobile.entity");
 class AdminController {
     async updateAdmin(req, res) {
         try {
@@ -471,6 +472,31 @@ class AdminController {
             userDetails.amount = String(+userDetails.amount - req.body['amount']);
             await data_source_1.default.getRepository(user_entity_1.User).save(userDetails);
             return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Money Removed Successfully To User Wallet", null);
+        }
+        catch (error) {
+            console.log('error', error);
+            return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, message_1.INTERNAL_SERVER_ERROR, error);
+        }
+    }
+    // add Edit Payment Mobile
+    async addEditPaymentMobile(req, res) {
+        try {
+            const deleteQuery = `DELETE FROM payment_mobile`;
+            await data_source_1.default.query(deleteQuery);
+            const mobileNumberData = req?.body;
+            const savedData = await data_source_1.default.getRepository(paymentMobile_entity_1.PaymentMobile).save(mobileNumberData);
+            return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Mobile Number Add Successfully", savedData);
+        }
+        catch (error) {
+            console.log('error', error);
+            return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, message_1.INTERNAL_SERVER_ERROR, error);
+        }
+    }
+    // get Payment Mobile
+    async getPaymentMobile(req, res) {
+        try {
+            const findData = await data_source_1.default.getRepository(paymentMobile_entity_1.PaymentMobile).find();
+            return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Find Payment Mobile Number Successfully", findData);
         }
         catch (error) {
             console.log('error', error);

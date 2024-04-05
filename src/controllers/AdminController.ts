@@ -13,6 +13,7 @@ import { ReferTable } from "../entity/referUser.entiry";
 import { GamePlayer } from "../entity/gamePlayer.entity";
 import { GameStatus } from "../constants/gameStatus";
 import { ILike } from "typeorm";
+import { PaymentMobile } from "../entity/paymentMobile.entity";
 
 export class AdminController {
     public async updateAdmin(req: any, res: any) {
@@ -594,6 +595,35 @@ export class AdminController {
 
             return sendResponse(res, StatusCodes.OK, "Money Removed Successfully To User Wallet", null);
 
+        } catch (error) {
+            console.log('error', error);
+            return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
+        }
+    }
+
+    // add Edit Payment Mobile
+    public async addEditPaymentMobile(req: any, res: any) {
+        try {
+            const deleteQuery = `DELETE FROM payment_mobile`;
+            await AppDataSource.query(deleteQuery);
+
+            const mobileNumberData = req?.body;
+
+            const savedData = await AppDataSource.getRepository(PaymentMobile).save(mobileNumberData);
+
+            return sendResponse(res, StatusCodes.OK, "Mobile Number Add Successfully", savedData);
+        } catch (error) {
+            console.log('error', error);
+            return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
+        }
+    }
+
+    // get Payment Mobile
+    public async getPaymentMobile(req: any, res: any) {
+        try {
+            const findData = await AppDataSource.getRepository(PaymentMobile).find();
+
+            return sendResponse(res, StatusCodes.OK, "Find Payment Mobile Number Successfully", findData);
         } catch (error) {
             console.log('error', error);
             return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
