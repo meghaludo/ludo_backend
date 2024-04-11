@@ -31,8 +31,8 @@ export class GameTable {
     @Column({ type: 'varchar', length: 255, nullable: true })
     cancel_reason!: string | any;
 
-    // @Column({ type: 'varchar', length: 255, nullable: true })
-    // p1_name!: string | any;
+    @Column({ type: 'varchar', length: 255, nullable: true })
+    creator_id!: string | any;
 
     // @Column({ type: 'varchar', length: 255, nullable: true })
     // p1_status!: string | any;

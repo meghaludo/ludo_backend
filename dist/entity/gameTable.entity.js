@@ -25,8 +25,7 @@ let GameTable = class GameTable {
     game_owner_id;
     cancel_user_id;
     cancel_reason;
-    // @Column({ type: 'varchar', length: 255, nullable: true })
-    // p1_name!: string | any;
+    creator_id;
     // @Column({ type: 'varchar', length: 255, nullable: true })
     // p1_status!: string | any;
     // @Column({ type: 'int', nullable: true })
@@ -87,6 +86,10 @@ __decorate([
     (0, typeorm_1.Column)({ type: 'varchar', length: 255, nullable: true }),
     __metadata("design:type", Object)
 ], GameTable.prototype, "cancel_reason", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', length: 255, nullable: true }),
+    __metadata("design:type", Object)
+], GameTable.prototype, "creator_id", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'int', nullable: true }),
     __metadata("design:type", Number)

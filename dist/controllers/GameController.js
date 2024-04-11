@@ -10,6 +10,7 @@ const data_source_1 = __importDefault(require("../data-source"));
 const user_entity_1 = require("../entity/user.entity");
 const responseUtil_1 = require("../utils/responseUtil");
 const adminCommission_entity_1 = require("../entity/adminCommission.entity");
+const axios_1 = __importDefault(require("axios"));
 const gameTable_entity_1 = require("../entity/gameTable.entity");
 const gameStatus_1 = require("../constants/gameStatus");
 const socket_1 = require("../socket/socket");
@@ -532,19 +533,75 @@ class GameController {
     async addGameCode(req, res) {
         try {
             const { game_table_id, user_id, game_code } = req?.body;
+            if (!game_code) {
+                return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.NOT_FOUND, 'Please Enter a game code');
+            }
+            // Check room code 
+            const options = {
+                method: 'GET',
+                url: 'https://ludo-king-room-code-api.p.rapidapi.com/checkroom',
+                params: {
+                    code: game_code,
+                },
+                headers: {
+                    'X-RapidAPI-Key': '493aeced9dmsha82e412b09eaaf0p1c9a5djsnd5a3581ae642',
+                    'X-RapidAPI-Host': 'ludo-king-room-code-api.p.rapidapi.com'
+                }
+            };
+            const gameCodeAPIRes = await axios_1.default.request(options);
+            console.log('gameCodeAPIRes1 ', gameCodeAPIRes?.data);
+            if (!gameCodeAPIRes?.data?.type) {
+                return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.NOT_FOUND, 'Enter Valid Game Code');
+            }
+            // Check room code second API
+            const options2 = {
+                method: 'GET',
+                url: 'https://ludo-king-room-code-api.p.rapidapi.com/global/checkroom',
+                params: {
+                    code: game_code,
+                },
+                headers: {
+                    'X-RapidAPI-Key': '493aeced9dmsha82e412b09eaaf0p1c9a5djsnd5a3581ae642',
+                    'X-RapidAPI-Host': 'ludo-king-room-code-api.p.rapidapi.com'
+                }
+            };
+            const gameCodeAPIRes2 = await axios_1.default.request(options2);
+            if (!gameCodeAPIRes2?.data?.type) {
+                return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.NOT_FOUND, 'Enter Valid Game Code');
+            }
+            console.log('gameCodeAPIRes2', gameCodeAPIRes2?.data);
+            // fetch result API From ludo
+            const resultCheck = {
+                method: 'GET',
+                url: 'https://ludo-king-room-code-api.p.rapidapi.com/result',
+                params: {
+                    code: game_code,
+                },
+                headers: {
+                    'X-RapidAPI-Key': '493aeced9dmsha82e412b09eaaf0p1c9a5djsnd5a3581ae642',
+                    'X-RapidAPI-Host': 'ludo-king-room-code-api.p.rapidapi.com'
+                }
+            };
+            const resultAPIResponse = await axios_1.default.request(resultCheck);
+            console.log('resultAPIResponse', resultAPIResponse?.data?.status);
+            if (resultAPIResponse?.data?.status !== 200) {
+                return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.NOT_FOUND, 'Game details not found');
+            }
+            // return sendResponse(res, StatusCodes.OK, "Game Generated Successfully.", resultAPIResponse?.data);
             let gameTable = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).findOne({
                 where: { id: Number(game_table_id) }
             });
             if (!gameTable) {
                 return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.NOT_FOUND, 'Game table not found');
             }
-            const existingGameCode = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).findOne({
-                where: { game_code: game_code }
-            });
-            if (existingGameCode) {
-                return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.CONFLICT, 'This code already exists.');
-            }
+            // const existingGameCode = await AppDataSource.getRepository(GameTable).findOne({
+            //     where: { game_code: game_code }
+            // });
+            // if (existingGameCode) {
+            //     return errorResponse(res, StatusCodes.CONFLICT, 'This code already exists.');
+            // }
             gameTable['game_code'] = game_code;
+            gameTable['creator_id'] = resultAPIResponse?.data?.creator_id;
             const savedData = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).save(gameTable);
             setTimeout(() => {
                 const io = (0, socket_1.getIO)();

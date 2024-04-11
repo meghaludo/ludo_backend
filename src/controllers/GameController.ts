@@ -398,7 +398,7 @@ export class GameController {
                     payment_type: 'refer',
                     status: 1
                 }
-                
+
                 await AppDataSource.getRepository(UserWallet).save(payload);
 
                 await AppDataSource.getRepository(User).save(referUser);
@@ -662,6 +662,74 @@ export class GameController {
         try {
             const { game_table_id, user_id, game_code } = req?.body;
 
+            if (!game_code) {
+                return errorResponse(res, StatusCodes.NOT_FOUND, 'Please Enter a game code');
+            }
+
+            // Check room code 
+            const options = {
+                method: 'GET',
+                url: 'https://ludo-king-room-code-api.p.rapidapi.com/checkroom',
+                params: {
+                    code: game_code,
+                },
+                headers: {
+                    'X-RapidAPI-Key': '493aeced9dmsha82e412b09eaaf0p1c9a5djsnd5a3581ae642',
+                    'X-RapidAPI-Host': 'ludo-king-room-code-api.p.rapidapi.com'
+                }
+            };
+
+            const gameCodeAPIRes: any = await axios.request(options);
+
+            console.log('gameCodeAPIRes1 ', gameCodeAPIRes?.data);
+
+            if (!gameCodeAPIRes?.data?.type) {
+                return errorResponse(res, StatusCodes.NOT_FOUND, 'Enter Valid Game Code');
+            }
+
+            // Check room code second API
+            const options2 = {
+                method: 'GET',
+                url: 'https://ludo-king-room-code-api.p.rapidapi.com/global/checkroom',
+                params: {
+                    code: game_code,
+                },
+                headers: {
+                    'X-RapidAPI-Key': '493aeced9dmsha82e412b09eaaf0p1c9a5djsnd5a3581ae642',
+                    'X-RapidAPI-Host': 'ludo-king-room-code-api.p.rapidapi.com'
+                }
+            };
+
+            const gameCodeAPIRes2: any = await axios.request(options2);
+
+            if (!gameCodeAPIRes2?.data?.type) {
+                return errorResponse(res, StatusCodes.NOT_FOUND, 'Enter Valid Game Code');
+            }
+
+            console.log('gameCodeAPIRes2', gameCodeAPIRes2?.data);
+            
+            // fetch result API From ludo
+            const resultCheck = {
+                method: 'GET',
+                url: 'https://ludo-king-room-code-api.p.rapidapi.com/result',
+                params: {
+                    code: game_code,
+                },
+                headers: {
+                    'X-RapidAPI-Key': '493aeced9dmsha82e412b09eaaf0p1c9a5djsnd5a3581ae642',
+                    'X-RapidAPI-Host': 'ludo-king-room-code-api.p.rapidapi.com'
+                }
+            };
+
+            const resultAPIResponse: any = await axios.request(resultCheck);
+            
+            console.log('resultAPIResponse', resultAPIResponse?.data?.status);
+
+            if(resultAPIResponse?.data?.status !== 200) {
+                return errorResponse(res, StatusCodes.NOT_FOUND, 'Game details not found');
+            }
+            // return sendResponse(res, StatusCodes.OK, "Game Generated Successfully.", resultAPIResponse?.data);
+
             let gameTable: any = await AppDataSource.getRepository(GameTable).findOne({
                 where: { id: Number(game_table_id) }
             });
@@ -670,15 +738,16 @@ export class GameController {
                 return errorResponse(res, StatusCodes.NOT_FOUND, 'Game table not found');
             }
 
-            const existingGameCode = await AppDataSource.getRepository(GameTable).findOne({
-                where: { game_code: game_code }
-            });
+            // const existingGameCode = await AppDataSource.getRepository(GameTable).findOne({
+            //     where: { game_code: game_code }
+            // });
 
-            if (existingGameCode) {
-                return errorResponse(res, StatusCodes.CONFLICT, 'This code already exists.');
-            }
+            // if (existingGameCode) {
+            //     return errorResponse(res, StatusCodes.CONFLICT, 'This code already exists.');
+            // }
 
             gameTable['game_code'] = game_code;
+            gameTable['creator_id'] = resultAPIResponse?.data?.creator_id;
 
             const savedData = await AppDataSource.getRepository(GameTable).save(gameTable);
 
