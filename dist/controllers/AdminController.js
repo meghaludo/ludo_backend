@@ -56,6 +56,14 @@ class AdminController {
                     {
                         game_key: (0, typeorm_1.ILike)(`%${req?.query?.search}%`),
                         role: 0
+                    },
+                    {
+                        mobile_no: (0, typeorm_1.ILike)(`%${req?.query?.search}%`),
+                        role: 0
+                    },
+                    {
+                        email: (0, typeorm_1.ILike)(`%${req?.query?.search}%`),
+                        role: 0
                     }
                 ];
             }
@@ -420,9 +428,9 @@ class AdminController {
             if (!req.body['amount']) {
                 return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.BAD_REQUEST, "Amount is required");
             }
-            if (req.body['amount'] < 200) {
-                return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.BAD_REQUEST, "Minimum Amount should be Rs. 200");
-            }
+            // if (req.body['amount'] < 100) {
+            //     return errorResponse(res, StatusCodes.BAD_REQUEST, "Minimum Amount should be Rs. 200");
+            // }
             const userDetails = await data_source_1.default.getRepository(user_entity_1.User).findOne({
                 where: { game_key: req.body['game_key'] }
             });

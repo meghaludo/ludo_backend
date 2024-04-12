@@ -299,18 +299,37 @@ export class GameController {
                 return errorResponse(res, StatusCodes.NOT_FOUND, 'PLease Upload Image.');
             }
 
+            // fetch result form the from the ludo API
+            const options = {
+                method: 'GET',
+                url: 'https://ludo-king-room-code-api.p.rapidapi.com/result',
+                params: {
+                    code: "05106654",
+                },
+                headers: {
+                    'X-RapidAPI-Key': '493aeced9dmsha82e412b09eaaf0p1c9a5djsnd5a3581ae642',
+                    'X-RapidAPI-Host': 'ludo-king-room-code-api.p.rapidapi.com'
+                }
+            };
+
+            const gameCodeAPIRes: any = await axios.request(options);
+
+            console.log('gameCodeAPIRes1 ', gameCodeAPIRes?.data);
+
+            if (gameCodeAPIRes?.data?.status !== 200) {
+                return errorResponse(res, StatusCodes.NOT_FOUND, 'Contact To Administration Or Try After Some Time');
+            }
+
             const existingData = await AppDataSource.getRepository(GamePlayer).findOne({
                 where: { game_table_id: Number(winPayload?.game_table_id), p_id: req?.userId }
             });
-
-            console.log('existingData wiiner', existingData);
 
             let savedDetails: any;
 
             if (existingData) {
                 existingData['p_status'] = PlayerStatus.Winner;
                 existingData['image'] = fileDataArray[0]?.filename || existingData['image'];
-                savedDetails = await AppDataSource.getRepository(GamePlayer).save(existingData);
+                // savedDetails = await AppDataSource.getRepository(GamePlayer).save(existingData);
             }
 
             const playerList = await AppDataSource.getRepository(GamePlayer).find({
@@ -332,6 +351,7 @@ export class GameController {
                 const winnerAmount = Number(winnerUser['amount']) + Number(gameDetails['winner_amount'])
                 winnerUser['amount'] = String(winnerAmount);
                 await AppDataSource.getRepository(User).save(winnerUser);
+
                 // manage wallet history
                 const payload = {
                     user_id: winnerUser?.id,
@@ -339,6 +359,7 @@ export class GameController {
                     payment_type: 'win_game',
                     status: 1
                 }
+
                 await AppDataSource.getRepository(UserWallet).save(payload);
 
                 await AppDataSource.getRepository(GameTable).save(gameDetails);
@@ -405,6 +426,151 @@ export class GameController {
             }
 
             return sendResponse(res, StatusCodes.OK, "Successfully update", savedDetails);
+        } catch (error) {
+            console.error('Win game result user can upload it : ', error);
+            return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
+        }
+    }
+
+    // user add win image photo in the API
+    public async winGameResult2(req: any, res: any) {
+        try {
+            const winPayload: any = req?.body;
+
+            const fileDataArray = req?.files;
+            if (fileDataArray?.length == 0) {
+                return errorResponse(res, StatusCodes.NOT_FOUND, 'PLease Upload Image.');
+            }
+
+            const gameDetails: any = await AppDataSource.getRepository(GameTable).findOne({
+                where: { id: Number(winPayload?.game_table_id) }
+            })
+
+            // fetch result form the from the ludo API
+            const options = {
+                method: 'GET',
+                url: 'https://ludo-king-room-code-api.p.rapidapi.com/result',
+                params: {
+                    code: gameDetails?.game_code,
+                },
+                headers: {
+                    'X-RapidAPI-Key': '493aeced9dmsha82e412b09eaaf0p1c9a5djsnd5a3581ae642',
+                    'X-RapidAPI-Host': 'ludo-king-room-code-api.p.rapidapi.com'
+                }
+            };
+            const gameCodeAPIRes: any = await axios.request(options);
+
+            if (gameCodeAPIRes?.data?.status !== 200) {
+                return errorResponse(res, StatusCodes.NOT_FOUND, 'Contact To Administration Or Try After Some Time');
+            }
+
+            if (!gameCodeAPIRes?.data?.player1_status || !gameCodeAPIRes?.data?.player2_status) {
+                return errorResponse(res, StatusCodes.NOT_FOUND, 'Please Complete the Game');
+            }
+
+            const gamePlayerList: any[] = await AppDataSource.getRepository(GamePlayer).find({
+                where: { game_table_id: Number(winPayload?.game_table_id) }
+            });
+
+            // Set game Status and add wining amount
+            await gamePlayerList?.map(async (element) => {
+                if (element?.p_id == req?.userId) {
+                    element['p_status'] = PlayerStatus.Winner;
+                    element['image'] = fileDataArray[0]?.filename || element['image'];
+                } else {
+                    element['p_status'] = PlayerStatus.Looser;
+                }
+                if (!element?.game_creator_id) {
+                    if (gameDetails?.creator_id == gameCodeAPIRes?.data?.player1_id) {
+                        element['game_creator_id'] = gameCodeAPIRes?.data?.player2_id;
+                    }
+                    if (gameDetails?.creator_id == gameCodeAPIRes?.data?.player2_id) {
+                        element['game_creator_id'] = gameCodeAPIRes?.data?.player1_id;
+                    }
+                }
+                if (element?.game_creator_id == gameCodeAPIRes?.data?.player1_id) {
+                    element['game_status'] = gameCodeAPIRes?.data?.player1_status;
+                }
+
+                if (element?.game_creator_id == gameCodeAPIRes?.data?.player2_id) {
+                    element['game_status'] = gameCodeAPIRes?.data?.player2_status;
+                }
+
+                console.log('element', element);
+
+                // Add winning amount
+                if (element['game_status'] == 'Won') {
+                    const winnerUser: any = await AppDataSource.getRepository(User).findOne({
+                        where: { id: Number(element?.p_id) }
+                    });
+
+                    const winnerAmount = Number(winnerUser['amount']) + Number(gameDetails['winner_amount']);
+
+                    winnerUser['amount'] = String(winnerAmount);
+
+                    await AppDataSource.getRepository(User).save(winnerUser);
+
+                    // manage wallet history
+                    const payload = {
+                        user_id: winnerUser?.id,
+                        amount: gameDetails['winner_amount'],
+                        payment_type: 'win_game',
+                        status: 1
+                    }
+                    await AppDataSource.getRepository(UserWallet).save(payload);
+                }
+                await AppDataSource.getRepository(GamePlayer).save(element);
+            });
+
+            // implement refer functionality
+            const winnerUserData = await AppDataSource.getRepository(GamePlayer).findOne({
+                where: { game_table_id: Number(winPayload?.game_table_id), game_status: 'Won' }
+            });
+            const user: any = await AppDataSource.getRepository(ReferTable).findOne({
+                where: { user_id: winnerUserData?.p_id }
+            });
+            if (user && (user?.refrence_user_id != 0)) {
+                const gameDetail: any = await AppDataSource.getRepository(GameTable).findOne({
+                    where: { id: Number(winPayload?.game_table_id) }
+                });
+
+                const adminCommission: any = await AppDataSource.getRepository(AdminCommission).findOne({
+                    where: { is_active: 1 }
+                });
+
+                const adminCommissionRs = ((Number(gameDetail?.amount) * 2) * Number(adminCommission?.commission) || 0) / 100;
+
+                const referCommission: any = await AppDataSource.getRepository(ReferCommission).findOne({
+                    where: { is_active: 1 }
+                });
+
+                const referCommissionRs = (Number(adminCommissionRs) * Number(referCommission?.commission) || 0) / 100;
+
+                const referUser: any = await AppDataSource.getRepository(User).findOne({
+                    where: { id: Number(user.refrence_user_id) }
+                });
+
+                const commission = Number(referUser?.amount) + Number(referCommissionRs);
+
+                referUser.amount = String(commission);
+
+                const payload = {
+                    user_id: referUser?.id,
+                    amount: String(referCommissionRs),
+                    payment_type: 'refer',
+                    status: 1
+                }
+
+                await AppDataSource.getRepository(UserWallet).save(payload);
+
+                await AppDataSource.getRepository(User).save(referUser);
+            }
+
+            gameDetails['status'] = GameStatus.Completed;
+
+            const updateGameData = await AppDataSource.getRepository(GameTable).save(gameDetails);
+
+            return sendResponse(res, StatusCodes.OK, "Successfully update", updateGameData);
         } catch (error) {
             console.error('Win game result user can upload it : ', error);
             return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
@@ -560,6 +726,145 @@ export class GameController {
         }
     }
 
+    // user add win image photo in the API
+    public async looseGameResult2(req: any, res: any) {
+        try {
+            const winPayload: any = req?.body;
+
+            const gameDetails: any = await AppDataSource.getRepository(GameTable).findOne({
+                where: { id: Number(winPayload?.game_table_id) }
+            })
+
+            // fetch result form the from the ludo API
+            const options = {
+                method: 'GET',
+                url: 'https://ludo-king-room-code-api.p.rapidapi.com/result',
+                params: {
+                    code: gameDetails?.game_code,
+                },
+                headers: {
+                    'X-RapidAPI-Key': '493aeced9dmsha82e412b09eaaf0p1c9a5djsnd5a3581ae642',
+                    'X-RapidAPI-Host': 'ludo-king-room-code-api.p.rapidapi.com'
+                }
+            };
+            const gameCodeAPIRes: any = await axios.request(options);
+
+            if (gameCodeAPIRes?.data?.status !== 200) {
+                return errorResponse(res, StatusCodes.NOT_FOUND, 'Contact To Administration Or Try After Some Time');
+            }
+
+            if (!gameCodeAPIRes?.data?.player1_status || !gameCodeAPIRes?.data?.player2_status) {
+                return errorResponse(res, StatusCodes.NOT_FOUND, 'Please Complete the Game');
+            }
+
+            const gamePlayerList: any[] = await AppDataSource.getRepository(GamePlayer).find({
+                where: { game_table_id: Number(winPayload?.game_table_id) }
+            });
+
+            // Set game Status and add wining amount
+            await gamePlayerList?.map(async (element) => {
+                if (element?.p_id == req?.userId) {
+                    element['p_status'] = PlayerStatus.Looser;
+                } else {
+                    element['p_status'] = PlayerStatus.Winner;
+                }
+                if (!element?.game_creator_id) {
+                    if (gameDetails?.creator_id == gameCodeAPIRes?.data?.player1_id) {
+                        element['game_creator_id'] = gameCodeAPIRes?.data?.player2_id;
+                    }
+                    if (gameDetails?.creator_id == gameCodeAPIRes?.data?.player2_id) {
+                        element['game_creator_id'] = gameCodeAPIRes?.data?.player1_id;
+                    }
+                }
+                if (element?.game_creator_id == gameCodeAPIRes?.data?.player1_id) {
+                    element['game_status'] = gameCodeAPIRes?.data?.player1_status;
+                }
+
+                if (element?.game_creator_id == gameCodeAPIRes?.data?.player2_id) {
+                    element['game_status'] = gameCodeAPIRes?.data?.player2_status;
+                }
+
+                console.log('element', element);
+
+                // Add winning amount
+                if (element['game_status'] == 'Won') {
+                    const winnerUser: any = await AppDataSource.getRepository(User).findOne({
+                        where: { id: Number(element?.p_id) }
+                    });
+
+                    const winnerAmount = Number(winnerUser['amount']) + Number(gameDetails['winner_amount']);
+
+                    winnerUser['amount'] = String(winnerAmount);
+
+                    await AppDataSource.getRepository(User).save(winnerUser);
+
+                    // manage wallet history
+                    const payload = {
+                        user_id: winnerUser?.id,
+                        amount: gameDetails['winner_amount'],
+                        payment_type: 'win_game',
+                        status: 1
+                    }
+                    await AppDataSource.getRepository(UserWallet).save(payload);
+                }
+                await AppDataSource.getRepository(GamePlayer).save(element);
+            });
+
+            // implement refer functionality
+            const winnerUserData = await AppDataSource.getRepository(GamePlayer).findOne({
+                where: { game_table_id: Number(winPayload?.game_table_id), game_status: 'Won' }
+            });
+            const user: any = await AppDataSource.getRepository(ReferTable).findOne({
+                where: { user_id: winnerUserData?.p_id }
+            });
+            if (user && (user?.refrence_user_id != 0)) {
+                const gameDetail: any = await AppDataSource.getRepository(GameTable).findOne({
+                    where: { id: Number(winPayload?.game_table_id) }
+                });
+
+                const adminCommission: any = await AppDataSource.getRepository(AdminCommission).findOne({
+                    where: { is_active: 1 }
+                });
+
+                const adminCommissionRs = ((Number(gameDetail?.amount) * 2) * Number(adminCommission?.commission) || 0) / 100;
+
+                const referCommission: any = await AppDataSource.getRepository(ReferCommission).findOne({
+                    where: { is_active: 1 }
+                });
+
+                const referCommissionRs = (Number(adminCommissionRs) * Number(referCommission?.commission) || 0) / 100;
+
+                const referUser: any = await AppDataSource.getRepository(User).findOne({
+                    where: { id: Number(user.refrence_user_id) }
+                });
+
+                const commission = Number(referUser?.amount) + Number(referCommissionRs);
+
+                referUser.amount = String(commission);
+
+                const payload = {
+                    user_id: referUser?.id,
+                    amount: String(referCommissionRs),
+                    payment_type: 'refer',
+                    status: 1
+                }
+
+                await AppDataSource.getRepository(UserWallet).save(payload);
+
+                await AppDataSource.getRepository(User).save(referUser);
+            }
+
+            gameDetails['status'] = GameStatus.Completed;
+
+            const updateGameData = await AppDataSource.getRepository(GameTable).save(gameDetails);
+
+            return sendResponse(res, StatusCodes.OK, "Successfully update", updateGameData);
+        } catch (error) {
+            console.error('Win game result user can upload it : ', error);
+            return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
+        }
+    }
+
     //  get game history for particular user
     public async getGameHistoryUser(req: any, res: any) {
         try {
@@ -707,7 +1012,7 @@ export class GameController {
             }
 
             console.log('gameCodeAPIRes2', gameCodeAPIRes2?.data);
-            
+
             // fetch result API From ludo
             const resultCheck = {
                 method: 'GET',
@@ -722,10 +1027,10 @@ export class GameController {
             };
 
             const resultAPIResponse: any = await axios.request(resultCheck);
-            
+
             console.log('resultAPIResponse', resultAPIResponse?.data?.status);
 
-            if(resultAPIResponse?.data?.status !== 200) {
+            if (resultAPIResponse?.data?.status !== 200) {
                 return errorResponse(res, StatusCodes.NOT_FOUND, 'Game details not found');
             }
             // return sendResponse(res, StatusCodes.OK, "Game Generated Successfully.", resultAPIResponse?.data);
@@ -750,6 +1055,14 @@ export class GameController {
             gameTable['creator_id'] = resultAPIResponse?.data?.creator_id;
 
             const savedData = await AppDataSource.getRepository(GameTable).save(gameTable);
+
+            const findPlayerData: any = await AppDataSource.getRepository(GamePlayer).findOne({
+                where: { game_table_id: Number(game_table_id), p_id: Number(user_id) }
+            });
+
+            findPlayerData['game_creator_id'] = resultAPIResponse?.data?.creator_id;
+
+            await AppDataSource.getRepository(GamePlayer).save(findPlayerData);
 
             setTimeout(() => {
                 const io = getIO();

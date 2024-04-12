@@ -22,8 +22,8 @@ gameRoute.get('/game-list', gameController.gameList);
 
 gameRoute.get('/get-game-table/:id', gameController.getGameTable);
 
-gameRoute.post('/win-game',upload.array('file', 1), gameController.winGameResult); // For the win game
-gameRoute.post('/loose-game', gameController.looseGameResult); // for the loose the game 
+gameRoute.post('/win-game',upload.array('file', 1), gameController.winGameResult2); // For the win game
+gameRoute.post('/loose-game', gameController.looseGameResult2); // for the loose the game 
 gameRoute.post('/cancel-game', gameController.cancelGame); // cancel game
 
 // get game history for particular user

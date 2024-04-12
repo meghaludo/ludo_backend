@@ -20,6 +20,12 @@ export class GamePlayer {
     p_status!: string | any;
 
     @Column({ type: 'varchar', length: 255, nullable: true })
+    game_creator_id!: string | any;
+
+    @Column({ type: 'varchar', length: 255, nullable: true })
+    game_status!: string | any;
+
+    @Column({ type: 'varchar', length: 255, nullable: true })
     image!: string;
 
     @CreateDateColumn({ type: 'timestamp', precision: 6, default: () => 'CURRENT_TIMESTAMP(6)' })

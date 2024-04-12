@@ -16,8 +16,8 @@ gameRoute.get('/start-game/:id', gameController.startGame);
 // click to play button start the game
 gameRoute.get('/game-list', gameController.gameList);
 gameRoute.get('/get-game-table/:id', gameController.getGameTable);
-gameRoute.post('/win-game', multerConfig_1.upload.array('file', 1), gameController.winGameResult); // For the win game
-gameRoute.post('/loose-game', gameController.looseGameResult); // for the loose the game 
+gameRoute.post('/win-game', multerConfig_1.upload.array('file', 1), gameController.winGameResult2); // For the win game
+gameRoute.post('/loose-game', gameController.looseGameResult2); // for the loose the game 
 gameRoute.post('/cancel-game', gameController.cancelGame); // cancel game
 // get game history for particular user
 gameRoute.get('/get-game-history', gameController.getGameHistoryUser);

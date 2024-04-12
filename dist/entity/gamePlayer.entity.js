@@ -19,6 +19,8 @@ let GamePlayer = class GamePlayer {
     p_id;
     p_name;
     p_status;
+    game_creator_id;
+    game_status;
     image;
     created_on;
     modified_on;
@@ -46,6 +48,14 @@ __decorate([
     (0, typeorm_1.Column)({ type: 'varchar', length: 255, nullable: true }),
     __metadata("design:type", Object)
 ], GamePlayer.prototype, "p_status", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', length: 255, nullable: true }),
+    __metadata("design:type", Object)
+], GamePlayer.prototype, "game_creator_id", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', length: 255, nullable: true }),
+    __metadata("design:type", Object)
+], GamePlayer.prototype, "game_status", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'varchar', length: 255, nullable: true }),
     __metadata("design:type", String)

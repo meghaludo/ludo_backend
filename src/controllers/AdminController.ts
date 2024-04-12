@@ -58,6 +58,14 @@ export class AdminController {
                     {
                         game_key: ILike(`%${req?.query?.search}%`),
                         role: 0
+                    },
+                    {
+                        mobile_no: ILike(`%${req?.query?.search}%`),
+                        role: 0
+                    },
+                    {
+                        email: ILike(`%${req?.query?.search}%`),
+                        role: 0
                     }
                 ]
             } else {
@@ -526,9 +534,9 @@ export class AdminController {
                 return errorResponse(res, StatusCodes.BAD_REQUEST, "Amount is required");
             }
 
-            if (req.body['amount'] < 200) {
-                return errorResponse(res, StatusCodes.BAD_REQUEST, "Minimum Amount should be Rs. 200");
-            }
+            // if (req.body['amount'] < 100) {
+            //     return errorResponse(res, StatusCodes.BAD_REQUEST, "Minimum Amount should be Rs. 200");
+            // }
 
             const userDetails = await AppDataSource.getRepository(User).findOne({
                 where: { game_key: req.body['game_key'] }
