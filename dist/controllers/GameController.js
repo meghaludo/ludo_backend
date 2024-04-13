@@ -653,38 +653,38 @@ class GameController {
                 await data_source_1.default.getRepository(gamePlayer_entity_1.GamePlayer).save(element);
             });
             // implement refer functionality
-            const winnerUserData = await data_source_1.default.getRepository(gamePlayer_entity_1.GamePlayer).findOne({
-                where: { game_table_id: Number(winPayload?.game_table_id), game_status: 'Won' }
-            });
-            const user = await data_source_1.default.getRepository(referUser_entiry_1.ReferTable).findOne({
-                where: { user_id: winnerUserData?.p_id }
-            });
-            if (user && (user?.refrence_user_id != 0)) {
-                const gameDetail = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).findOne({
-                    where: { id: Number(winPayload?.game_table_id) }
-                });
-                const adminCommission = await data_source_1.default.getRepository(adminCommission_entity_1.AdminCommission).findOne({
-                    where: { is_active: 1 }
-                });
-                const adminCommissionRs = ((Number(gameDetail?.amount) * 2) * Number(adminCommission?.commission) || 0) / 100;
-                const referCommission = await data_source_1.default.getRepository(referCommission_entity_1.ReferCommission).findOne({
-                    where: { is_active: 1 }
-                });
-                const referCommissionRs = (Number(adminCommissionRs) * Number(referCommission?.commission) || 0) / 100;
-                const referUser = await data_source_1.default.getRepository(user_entity_1.User).findOne({
-                    where: { id: Number(user.refrence_user_id) }
-                });
-                const commission = Number(referUser?.amount) + Number(referCommissionRs);
-                referUser.amount = String(commission);
-                const payload = {
-                    user_id: referUser?.id,
-                    amount: String(referCommissionRs),
-                    payment_type: 'refer',
-                    status: 1
-                };
-                await data_source_1.default.getRepository(wallet_entity_1.UserWallet).save(payload);
-                await data_source_1.default.getRepository(user_entity_1.User).save(referUser);
-            }
+            // const winnerUserData = await AppDataSource.getRepository(GamePlayer).findOne({
+            //     where: { game_table_id: Number(winPayload?.game_table_id), game_status: 'Won' }
+            // });
+            // const user: any = await AppDataSource.getRepository(ReferTable).findOne({
+            //     where: { user_id: winnerUserData?.p_id }
+            // });
+            // if (user && (user?.refrence_user_id != 0)) {
+            //     const gameDetail: any = await AppDataSource.getRepository(GameTable).findOne({
+            //         where: { id: Number(winPayload?.game_table_id) }
+            //     });
+            //     const adminCommission: any = await AppDataSource.getRepository(AdminCommission).findOne({
+            //         where: { is_active: 1 }
+            //     });
+            //     const adminCommissionRs = ((Number(gameDetail?.amount) * 2) * Number(adminCommission?.commission) || 0) / 100;
+            //     const referCommission: any = await AppDataSource.getRepository(ReferCommission).findOne({
+            //         where: { is_active: 1 }
+            //     });
+            //     const referCommissionRs = (Number(adminCommissionRs) * Number(referCommission?.commission) || 0) / 100;
+            //     const referUser: any = await AppDataSource.getRepository(User).findOne({
+            //         where: { id: Number(user.refrence_user_id) }
+            //     });
+            //     const commission = Number(referUser?.amount) + Number(referCommissionRs);
+            //     referUser.amount = String(commission);
+            //     const payload = {
+            //         user_id: referUser?.id,
+            //         amount: String(referCommissionRs),
+            //         payment_type: 'refer',
+            //         status: 1
+            //     }
+            //     await AppDataSource.getRepository(UserWallet).save(payload);
+            //     await AppDataSource.getRepository(User).save(referUser);
+            // }
             gameDetails['status'] = gameStatus_1.GameStatus.Completed;
             const updateGameData = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).save(gameDetails);
             return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Successfully update", updateGameData);
@@ -715,6 +715,7 @@ class GameController {
     async adminGameHistory(req, res) {
         try {
             const gameList = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).find({
+                where: { status: Number(req?.query?.status) || 4 },
                 relations: ['gameOwner', 'gamePlayer']
             });
             return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Get Game Battle  History Successfully.", gameList);

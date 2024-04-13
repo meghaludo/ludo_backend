@@ -282,6 +282,18 @@ export class UserController {
                 return errorResponse(res, StatusCodes.NOT_FOUND, 'Withdraw Min Amount Rs. 190');
             }
 
+            const userDetails : any = await AppDataSource.getRepository(User).findOne({
+                where: { id: Number(req?.userId) }
+            });
+
+            if(Number(userDetails['amount']) < Number(withdrawDetails?.amount)) {
+                return errorResponse(res, StatusCodes.NOT_FOUND, 'Please check your balance');
+            }
+
+            const amount = Number(userDetails['amount']) - Number(withdrawDetails?.amount);
+            userDetails['amount'] = String(amount);
+            await AppDataSource.getRepository(User).save(userDetails);
+
             const addWithdraw = await AppDataSource.getRepository(Withdraw).save(withdrawDetails);
 
             return sendResponse(res, StatusCodes.OK, "Withdraw Amount Request Send Successfully", addWithdraw);
@@ -342,7 +354,7 @@ export class UserController {
             });
 
             if (!walletAmount) {
-                errorResponse(res, StatusCodes.BAD_REQUEST, "Bank Details Not Found");
+                return errorResponse(res, StatusCodes.BAD_REQUEST, "Bank Details Not Found");
             }
 
             return sendResponse(res, StatusCodes.OK, "User Wallet Details Successfully Found", walletAmount);
@@ -382,23 +394,23 @@ export class UserController {
             const referCommission: any = getReferCommission?.length > 0 ? getReferCommission[0] : {}
 
             const referUserData: any[] = await AppDataSource.getRepository(ReferTable).find({
-                where: { refrence_user_id : req?.userId }
+                where: { refrence_user_id: req?.userId }
             });
 
-            const getReferAmount : any[] = await AppDataSource.getRepository(UserWallet).find({
-                where : { user_id : Number(req?.userId), payment_type : 'refer' }
+            const getReferAmount: any[] = await AppDataSource.getRepository(UserWallet).find({
+                where: { user_id: Number(req?.userId), payment_type: 'refer' }
             });
 
-            let totalAmount : number = 0;
+            let totalAmount: number = 0;
 
             getReferAmount?.map((element) => {
-                totalAmount =  totalAmount  + Number(element?.amount);
+                totalAmount = totalAmount + Number(element?.amount);
             });
 
             const payload = {
                 commission: referCommission,
                 referUser: referUserData?.length,
-                referAmount : totalAmount
+                referAmount: totalAmount
             }
 
             return sendResponse(res, StatusCodes.OK, "User refer details successfully get", payload);

@@ -255,6 +255,15 @@ class UserController {
             if (Number(withdrawDetails?.amount) < 190) {
                 return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.NOT_FOUND, 'Withdraw Min Amount Rs. 190');
             }
+            const userDetails = await data_source_1.default.getRepository(user_entity_1.User).findOne({
+                where: { id: Number(req?.userId) }
+            });
+            if (Number(userDetails['amount']) < Number(withdrawDetails?.amount)) {
+                return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.NOT_FOUND, 'Please check your balance');
+            }
+            const amount = Number(userDetails['amount']) - Number(withdrawDetails?.amount);
+            userDetails['amount'] = String(amount);
+            await data_source_1.default.getRepository(user_entity_1.User).save(userDetails);
             const addWithdraw = await data_source_1.default.getRepository(withdraw_entity_1.Withdraw).save(withdrawDetails);
             return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Withdraw Amount Request Send Successfully", addWithdraw);
         }
@@ -309,7 +318,7 @@ class UserController {
                 where: { user_id: req?.userId }
             });
             if (!walletAmount) {
-                (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.BAD_REQUEST, "Bank Details Not Found");
+                return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.BAD_REQUEST, "Bank Details Not Found");
             }
             return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "User Wallet Details Successfully Found", walletAmount);
         }

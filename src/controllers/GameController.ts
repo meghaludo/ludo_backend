@@ -13,6 +13,7 @@ import { ReasonMaster } from '../entity/gameCancelReasonMaster.entity';
 import { ReferCommission } from '../entity/referCommission.entity';
 import { UserWallet } from '../entity/wallet.entity';
 import { ReferTable } from '../entity/referUser.entiry';
+import { Equal } from 'typeorm';
 
 export class GameController {
     // create game
@@ -811,48 +812,48 @@ export class GameController {
             });
 
             // implement refer functionality
-            const winnerUserData = await AppDataSource.getRepository(GamePlayer).findOne({
-                where: { game_table_id: Number(winPayload?.game_table_id), game_status: 'Won' }
-            });
-            const user: any = await AppDataSource.getRepository(ReferTable).findOne({
-                where: { user_id: winnerUserData?.p_id }
-            });
-            if (user && (user?.refrence_user_id != 0)) {
-                const gameDetail: any = await AppDataSource.getRepository(GameTable).findOne({
-                    where: { id: Number(winPayload?.game_table_id) }
-                });
+            // const winnerUserData = await AppDataSource.getRepository(GamePlayer).findOne({
+            //     where: { game_table_id: Number(winPayload?.game_table_id), game_status: 'Won' }
+            // });
+            // const user: any = await AppDataSource.getRepository(ReferTable).findOne({
+            //     where: { user_id: winnerUserData?.p_id }
+            // });
+            // if (user && (user?.refrence_user_id != 0)) {
+            //     const gameDetail: any = await AppDataSource.getRepository(GameTable).findOne({
+            //         where: { id: Number(winPayload?.game_table_id) }
+            //     });
 
-                const adminCommission: any = await AppDataSource.getRepository(AdminCommission).findOne({
-                    where: { is_active: 1 }
-                });
+            //     const adminCommission: any = await AppDataSource.getRepository(AdminCommission).findOne({
+            //         where: { is_active: 1 }
+            //     });
 
-                const adminCommissionRs = ((Number(gameDetail?.amount) * 2) * Number(adminCommission?.commission) || 0) / 100;
+            //     const adminCommissionRs = ((Number(gameDetail?.amount) * 2) * Number(adminCommission?.commission) || 0) / 100;
 
-                const referCommission: any = await AppDataSource.getRepository(ReferCommission).findOne({
-                    where: { is_active: 1 }
-                });
+            //     const referCommission: any = await AppDataSource.getRepository(ReferCommission).findOne({
+            //         where: { is_active: 1 }
+            //     });
 
-                const referCommissionRs = (Number(adminCommissionRs) * Number(referCommission?.commission) || 0) / 100;
+            //     const referCommissionRs = (Number(adminCommissionRs) * Number(referCommission?.commission) || 0) / 100;
 
-                const referUser: any = await AppDataSource.getRepository(User).findOne({
-                    where: { id: Number(user.refrence_user_id) }
-                });
+            //     const referUser: any = await AppDataSource.getRepository(User).findOne({
+            //         where: { id: Number(user.refrence_user_id) }
+            //     });
 
-                const commission = Number(referUser?.amount) + Number(referCommissionRs);
+            //     const commission = Number(referUser?.amount) + Number(referCommissionRs);
 
-                referUser.amount = String(commission);
+            //     referUser.amount = String(commission);
 
-                const payload = {
-                    user_id: referUser?.id,
-                    amount: String(referCommissionRs),
-                    payment_type: 'refer',
-                    status: 1
-                }
+            //     const payload = {
+            //         user_id: referUser?.id,
+            //         amount: String(referCommissionRs),
+            //         payment_type: 'refer',
+            //         status: 1
+            //     }
 
-                await AppDataSource.getRepository(UserWallet).save(payload);
+            //     await AppDataSource.getRepository(UserWallet).save(payload);
 
-                await AppDataSource.getRepository(User).save(referUser);
-            }
+            //     await AppDataSource.getRepository(User).save(referUser);
+            // }
 
             gameDetails['status'] = GameStatus.Completed;
 
@@ -889,6 +890,7 @@ export class GameController {
     public async adminGameHistory(req: any, res: any) {
         try {
             const gameList = await AppDataSource.getRepository(GameTable).find({
+                where : { status : Number(req?.query?.status) || 4 },
                 relations: ['gameOwner', 'gamePlayer']
             });
 

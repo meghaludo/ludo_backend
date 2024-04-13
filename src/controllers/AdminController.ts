@@ -214,26 +214,26 @@ export class AdminController {
                 await AppDataSource.getRepository(User).save(userDetails);
             }
 
-            walletDetails['status'] = status;
 
-            const walletAction = await AppDataSource.getRepository(Withdraw).save(walletDetails);
-
-            if (walletAction['status'] === 1) {
+            if (walletDetails['status'] === 2 && status == 1) {
                 const userDetails: any = await AppDataSource.getRepository(User).findOne({
-                    where: { id: walletAction?.user_id }
+                    where: { id: walletDetails?.user_id }
                 });
 
-                if (walletAction['amount'] == '0' || !walletAction['amount']) {
-                    walletAction['amount'] = '0';
+                if (walletDetails['amount'] == '0' || !walletDetails['amount']) {
+                    walletDetails['amount'] = '0';
                 }
 
-                const totalAmount = Number(userDetails['amount']) - Number(walletAction['amount']);
+                const totalAmount = Number(userDetails['amount']) - Number(walletDetails['amount']);
 
                 userDetails['amount'] = String(totalAmount);
 
                 await AppDataSource.getRepository(User).save(userDetails);
             }
 
+            walletDetails['status'] = status;
+
+            const walletAction = await AppDataSource.getRepository(Withdraw).save(walletDetails);
             return sendResponse(res, StatusCodes.OK, "User Withdraw Updated Successfully", walletAction);
         } catch (error) {
             return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);

@@ -182,19 +182,19 @@ class AdminController {
                 userDetails['amount'] = String(totalAmount);
                 await data_source_1.default.getRepository(user_entity_1.User).save(userDetails);
             }
-            walletDetails['status'] = status;
-            const walletAction = await data_source_1.default.getRepository(withdraw_entity_1.Withdraw).save(walletDetails);
-            if (walletAction['status'] === 1) {
+            if (walletDetails['status'] === 2 && status == 1) {
                 const userDetails = await data_source_1.default.getRepository(user_entity_1.User).findOne({
-                    where: { id: walletAction?.user_id }
+                    where: { id: walletDetails?.user_id }
                 });
-                if (walletAction['amount'] == '0' || !walletAction['amount']) {
-                    walletAction['amount'] = '0';
+                if (walletDetails['amount'] == '0' || !walletDetails['amount']) {
+                    walletDetails['amount'] = '0';
                 }
-                const totalAmount = Number(userDetails['amount']) - Number(walletAction['amount']);
+                const totalAmount = Number(userDetails['amount']) - Number(walletDetails['amount']);
                 userDetails['amount'] = String(totalAmount);
                 await data_source_1.default.getRepository(user_entity_1.User).save(userDetails);
             }
+            walletDetails['status'] = status;
+            const walletAction = await data_source_1.default.getRepository(withdraw_entity_1.Withdraw).save(walletDetails);
             return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "User Withdraw Updated Successfully", walletAction);
         }
         catch (error) {

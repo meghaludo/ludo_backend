@@ -21,5 +21,7 @@ authRoutes.post('/verify', authController.verifyUserName);
 
 // forgot-password
 authRoutes.post('/forgot-password', authController.forgotPassword);
+// Send OTP
+authRoutes.post('/send-otp', authController.sendVerifyMobileNumber);
 
 export default authRoutes;

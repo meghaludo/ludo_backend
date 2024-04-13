@@ -37,7 +37,6 @@ export class AuthController {
             }
 
             const OTP = Math.floor(Math.random() * 9000) + 1000;
-            console.log('OTP', OTP);
 
             const baseURL = 'https://www.fast2sms.com/dev/bulkV2';
             let params: any = {
@@ -112,7 +111,7 @@ export class AuthController {
                 mobileLogin['otp'] = null;
                 const userData = await AppDataSource.getRepository(User).save(mobileLogin);
 
-                const token = jwt.sign({ userId: mobileLogin?.id }, "dHPaQEEL]Y]5X;HOAC[kF1DNF(9eC4vs", { expiresIn: '8h' });
+                const token = jwt.sign({ userId: mobileLogin?.id }, "dHPaQEEL]Y]5X;HOAC[kF1DNF(9eC4vs", { expiresIn: '48h' });
 
                 return sendResponse(res, StatusCodes.OK, "OTP Verify Successfully", userData, null, token);
 
@@ -157,6 +156,7 @@ export class AuthController {
 
             const enterUserData: any = {
                 full_name: userData?.full_name || null,
+                ludo_name: userData?.full_name || 'test',
                 mobile_no: userData?.mobile_no || null,
                 email: userData?.email || null,
                 password: userData?.password || null,
@@ -278,7 +278,7 @@ export class AuthController {
                     return errorResponse(res, StatusCodes.UNAUTHORIZED, 'Invalid Credentials');
                 }
 
-                const token = jwt.sign({ userId: mobileLogin?.id, role: mobileLogin?.role }, "dHPaQEEL]Y]5X;HOAC[kF1DNF(9eC4vs", { expiresIn: '8h' });
+                const token = jwt.sign({ userId: mobileLogin?.id, role: mobileLogin?.role }, "dHPaQEEL]Y]5X;HOAC[kF1DNF(9eC4vs", { expiresIn: '48h' });
 
                 return sendResponse(res, StatusCodes.OK, "User Login Successfully", mobileLogin, null, token);
             }
@@ -293,6 +293,44 @@ export class AuthController {
                 const token = jwt.sign({ userId: emailLogin?.id, role: emailLogin?.role }, "dHPaQEEL]Y]5X;HOAC[kF1DNF(9eC4vs", { expiresIn: '8h' });
 
                 return sendResponse(res, StatusCodes.OK, "User Login Successfully", emailLogin, null, token);
+            }
+        } catch (error) {
+            return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
+        }
+    }
+
+    // send otp for verify mobileNumber
+    public async sendVerifyMobileNumber(req: any, res: any) {
+        try {
+            const payload = req?.body;
+
+            if (payload?.type == 'resendOtp') {
+
+            }
+
+            if (payload?.type == 'registerOtp') {
+                const OTP = Math.floor(Math.random() * 9000) + 1000;
+
+                const baseURL = 'https://www.fast2sms.com/dev/bulkV2';
+                let params: any = {
+                    authorization: 'CwYEiWkHmg7a3PyTB1xGvzI2JMn0Zsf59eqSXuNOFDbdcAhrpjcuzXOTbvmgIG6kLn2D7SdVwAtJohZU',
+                    route: 'otp',
+                    variables_values: String(OTP),
+                    numbers: payload['mobile_no'],
+                    flash: '0',
+                };
+
+                const response: any = await axios.get(baseURL, { params });
+
+                if (response.status >= 200 && response.status < 300) {
+                    return sendResponse(res, StatusCodes.OK, "OTP Send Successfully", response.data);
+                } else {
+                    return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, 'Please Retry After Sometime');
+                }
+            }
+
+            if (payload?.type !== 'resendOtp' && payload?.type !== 'registerOtp') {
+                return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, 'Please Retry After Sometime');
             }
         } catch (error) {
             return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);

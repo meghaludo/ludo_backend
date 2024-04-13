@@ -29,7 +29,7 @@ const paymentMobile_entity_1 = require("./entity/paymentMobile.entity");
 //   // entities: ["dist/entity/*.entity.js"],
 //   // entities: ["entity/*.entity.{ts,js}"],
 //   logging: true,
-//   synchronize: true,
+//   synchronize: false,
 // });
 exports.AppDataSource = new typeorm_1.DataSource({
     type: "mysql",
