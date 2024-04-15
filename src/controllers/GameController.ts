@@ -571,6 +571,11 @@ export class GameController {
 
             const updateGameData = await AppDataSource.getRepository(GameTable).save(gameDetails);
 
+            setTimeout(() => {
+                const io = getIO();
+                io.emit('generate_game_code', { title: 'Generate Game', data: { game_table_id: Number(winPayload?.game_table_id) } });
+            }, 1000);
+
             return sendResponse(res, StatusCodes.OK, "Successfully update", updateGameData);
         } catch (error) {
             console.error('Win game result user can upload it : ', error);

@@ -35,4 +35,6 @@ adminRoute.post("/remove-money-from-wallet", adminController.removeMoneyToWallet
 adminRoute.post('/add-edit-payment-mobile', adminController.addEditPaymentMobile);
 // get payment mobile number
 adminRoute.get('/get-payment-mobile', adminController.getPaymentMobile);
+// show pending withdraw count 
+adminRoute.get('/withdraw-pending-count', adminController.getPendingWithdrawCount);
 exports.default = adminRoute;

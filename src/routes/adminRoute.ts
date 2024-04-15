@@ -46,4 +46,8 @@ adminRoute.post('/add-edit-payment-mobile', adminController.addEditPaymentMobile
 
 // get payment mobile number
 adminRoute.get('/get-payment-mobile', adminController.getPaymentMobile);
+
+// show pending withdraw count 
+adminRoute.get('/withdraw-pending-count', adminController.getPendingWithdrawCount);
+
 export default adminRoute;

@@ -152,9 +152,18 @@ class AdminController {
     // get withdraw list
     async getWithdrawList(req, res) {
         try {
-            const withdrawList = await data_source_1.default.getRepository(withdraw_entity_1.Withdraw).find({
-                relations: ['userDetail']
-            });
+            let withdrawList = [];
+            if (req?.query?.status == 5) {
+                withdrawList = await data_source_1.default.getRepository(withdraw_entity_1.Withdraw).find({
+                    relations: ['userDetail']
+                });
+            }
+            else {
+                withdrawList = await data_source_1.default.getRepository(withdraw_entity_1.Withdraw).find({
+                    where: { status: Number(req?.query?.status) || 3 },
+                    relations: ['userDetail']
+                });
+            }
             return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "User Withdraw History Find Successfully", withdrawList);
         }
         catch (error) {
@@ -505,6 +514,19 @@ class AdminController {
         try {
             const findData = await data_source_1.default.getRepository(paymentMobile_entity_1.PaymentMobile).find();
             return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Find Payment Mobile Number Successfully", findData);
+        }
+        catch (error) {
+            console.log('error', error);
+            return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, message_1.INTERNAL_SERVER_ERROR, error);
+        }
+    }
+    // get Payment Mobile
+    async getPendingWithdrawCount(req, res) {
+        try {
+            let query = await data_source_1.default.getRepository(withdraw_entity_1.Withdraw).createQueryBuilder('withdraws');
+            query = query.andWhere(`withdraws.status = 0 OR withdraws.status = 3`);
+            const findData = await query.getMany();
+            return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Find Pending Payment count Successfully", { count: findData?.length || 0 });
         }
         catch (error) {
             console.log('error', error);

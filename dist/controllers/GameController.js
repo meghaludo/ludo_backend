@@ -457,6 +457,10 @@ class GameController {
             }
             gameDetails['status'] = gameStatus_1.GameStatus.Completed;
             const updateGameData = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).save(gameDetails);
+            setTimeout(() => {
+                const io = (0, socket_1.getIO)();
+                io.emit('generate_game_code', { title: 'Generate Game', data: { game_table_id: Number(winPayload?.game_table_id) } });
+            }, 1000);
             return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Successfully update", updateGameData);
         }
         catch (error) {

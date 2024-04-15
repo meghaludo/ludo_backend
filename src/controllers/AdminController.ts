@@ -175,9 +175,17 @@ export class AdminController {
     // get withdraw list
     public async getWithdrawList(req: any, res: any) {
         try {
-            const withdrawList = await AppDataSource.getRepository(Withdraw).find({
-                relations: ['userDetail']
-            });
+            let withdrawList = [];
+            if(req?.query?.status == 5) {
+                withdrawList = await AppDataSource.getRepository(Withdraw).find({
+                    relations: ['userDetail']
+                });
+            } else {
+                withdrawList = await AppDataSource.getRepository(Withdraw).find({
+                    where : { status : Number(req?.query?.status) || 3 },
+                    relations: ['userDetail']
+                });
+            }
             return sendResponse(res, StatusCodes.OK, "User Withdraw History Find Successfully", withdrawList);
         } catch (error) {
             return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
@@ -632,6 +640,22 @@ export class AdminController {
             const findData = await AppDataSource.getRepository(PaymentMobile).find();
 
             return sendResponse(res, StatusCodes.OK, "Find Payment Mobile Number Successfully", findData);
+        } catch (error) {
+            console.log('error', error);
+            return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
+        }
+    }
+
+    // get Payment Mobile
+    public async getPendingWithdrawCount(req: any, res: any) {
+        try {
+            let query = await AppDataSource.getRepository(Withdraw).createQueryBuilder('withdraws');
+
+            query = query.andWhere(`withdraws.status = 0 OR withdraws.status = 3`);
+
+            const findData: any = await query.getMany();
+
+            return sendResponse(res, StatusCodes.OK, "Find Pending Payment count Successfully", { count: findData?.length || 0 });
         } catch (error) {
             console.log('error', error);
             return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
