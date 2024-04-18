@@ -238,6 +238,13 @@ class AdminController {
             const totalUser = await data_source_1.default.getRepository(user_entity_1.User).count({
                 where: { role: 0 },
             });
+            //today's total registered user
+            const todayUser = await data_source_1.default.getRepository(user_entity_1.User).count({
+                where: {
+                    role: 0,
+                    created_on: new Date()
+                }
+            });
             // total play game  
             const gameList = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).find({
             // where: [{ is_running: 1 }, { is_running: 2 }]
@@ -246,6 +253,17 @@ class AdminController {
             let adminCommissionAmount = 0;
             gameList?.map((element) => {
                 adminCommissionAmount = Number(adminCommissionAmount) + Number(element?.admin_commission);
+            });
+            // today's total played games
+            const todayGameList = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).find({
+                where: {
+                    created_on: new Date()
+                }
+            });
+            const todayPlayGame = todayGameList?.length;
+            let todayAdminCommissionAmount = 0;
+            todayGameList?.map((element) => {
+                todayAdminCommissionAmount = Number(todayAdminCommissionAmount) + Number(element?.admin_commission);
             });
             // admin commission
             const adminCommissionData = await data_source_1.default.getRepository(adminCommission_entity_1.AdminCommission).find();
@@ -257,6 +275,14 @@ class AdminController {
             walletData?.map((element) => {
                 totalWalletAmount = Number(totalWalletAmount) + Number(element?.amount);
             });
+            // today's total wallet amount
+            const todayWalletData = await data_source_1.default.getRepository(wallet_entity_1.UserWallet).find({
+                where: { status: 1, created_on: new Date() }
+            });
+            let todayTotalWalletAmount = 0;
+            todayWalletData?.map((element) => {
+                todayTotalWalletAmount = Number(todayTotalWalletAmount) + Number(element?.amount);
+            });
             //  total withdrawal amount
             const withdrawData = await data_source_1.default.getRepository(withdraw_entity_1.Withdraw).find({
                 where: { status: 1 }
@@ -265,14 +291,27 @@ class AdminController {
             withdrawData?.map((element) => {
                 totalWithdrawAmount = Number(totalWithdrawAmount) + Number(element?.amount);
             });
+            // today's total withdrawal amount
+            const todayWithdrawData = await data_source_1.default.getRepository(withdraw_entity_1.Withdraw).find({
+                where: { status: 1, created_on: new Date() }
+            });
+            let todayTotalWithdrawAmount = 0;
+            todayWithdrawData?.map((element) => {
+                todayTotalWithdrawAmount = Number(todayTotalWithdrawAmount) + Number(element?.amount);
+            });
             // all details
             const dashBoardDetails = {
                 totalUser: totalUser,
                 totalPlayGame: totalPlayGame,
                 adminCommission: adminCommissionData[0]?.commission,
-                totalWallet: totalWalletAmount,
-                totalWithdraw: totalWithdrawAmount,
-                totalAdminCommission: adminCommissionAmount
+                totalWallet: totalWalletAmount.toFixed(2),
+                totalWithdraw: totalWithdrawAmount.toFixed(2),
+                totalAdminCommission: adminCommissionAmount.toFixed(2),
+                todayTotalUser: todayUser,
+                todayTotalPlayGame: todayPlayGame,
+                todayTotalWallet: todayTotalWalletAmount.toFixed(2),
+                todayTotalWithdraw: todayTotalWithdrawAmount.toFixed(2),
+                todayTotalAdminCommission: todayAdminCommissionAmount.toFixed(2),
             };
             return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Successfully get dashboard details", dashBoardDetails);
         }

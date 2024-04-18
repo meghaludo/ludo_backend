@@ -176,13 +176,13 @@ export class AdminController {
     public async getWithdrawList(req: any, res: any) {
         try {
             let withdrawList = [];
-            if(req?.query?.status == 5) {
+            if (req?.query?.status == 5) {
                 withdrawList = await AppDataSource.getRepository(Withdraw).find({
                     relations: ['userDetail']
                 });
             } else {
                 withdrawList = await AppDataSource.getRepository(Withdraw).find({
-                    where : { status : Number(req?.query?.status) || 3 },
+                    where: { status: Number(req?.query?.status) || 3 },
                     relations: ['userDetail']
                 });
             }
@@ -281,6 +281,14 @@ export class AdminController {
                 where: { role: 0 },
             });
 
+            //today's total registered user
+            const todayUser = await AppDataSource.getRepository(User).count({
+                where: {
+                    role: 0,
+                    created_on: new Date()
+                }
+            });
+
             // total play game  
             const gameList = await AppDataSource.getRepository(GameTable).find({
                 // where: [{ is_running: 1 }, { is_running: 2 }]
@@ -292,6 +300,22 @@ export class AdminController {
 
             gameList?.map((element) => {
                 adminCommissionAmount = Number(adminCommissionAmount) + Number(element?.admin_commission);
+            });
+
+            // today's total played games
+
+            const todayGameList = await AppDataSource.getRepository(GameTable).find({
+                where: {
+                    created_on: new Date()
+                }
+            });
+
+            const todayPlayGame = todayGameList?.length;
+
+            let todayAdminCommissionAmount = 0;
+
+            todayGameList?.map((element) => {
+                todayAdminCommissionAmount = Number(todayAdminCommissionAmount) + Number(element?.admin_commission);
             });
 
             // admin commission
@@ -308,6 +332,17 @@ export class AdminController {
                 totalWalletAmount = Number(totalWalletAmount) + Number(element?.amount);
             });
 
+            // today's total wallet amount
+            const todayWalletData = await AppDataSource.getRepository(UserWallet).find({
+                where: { status: 1, created_on: new Date() }
+            });
+
+            let todayTotalWalletAmount = 0;
+
+            todayWalletData?.map((element) => {
+                todayTotalWalletAmount = Number(todayTotalWalletAmount) + Number(element?.amount);
+            });
+
             //  total withdrawal amount
             const withdrawData = await AppDataSource.getRepository(Withdraw).find({
                 where: { status: 1 }
@@ -319,14 +354,30 @@ export class AdminController {
                 totalWithdrawAmount = Number(totalWithdrawAmount) + Number(element?.amount);
             });
 
+            // today's total withdrawal amount
+            const todayWithdrawData = await AppDataSource.getRepository(Withdraw).find({
+                where: { status: 1, created_on: new Date() }
+            });
+
+            let todayTotalWithdrawAmount = 0;
+
+            todayWithdrawData?.map((element) => {
+                todayTotalWithdrawAmount = Number(todayTotalWithdrawAmount) + Number(element?.amount);
+            });
+
             // all details
             const dashBoardDetails = {
                 totalUser: totalUser,
                 totalPlayGame: totalPlayGame,
                 adminCommission: adminCommissionData[0]?.commission,
-                totalWallet: totalWalletAmount,
-                totalWithdraw: totalWithdrawAmount,
-                totalAdminCommission: adminCommissionAmount
+                totalWallet: totalWalletAmount.toFixed(2),
+                totalWithdraw: totalWithdrawAmount.toFixed(2),
+                totalAdminCommission: adminCommissionAmount.toFixed(2),
+                todayTotalUser: todayUser,
+                todayTotalPlayGame: todayPlayGame,
+                todayTotalWallet: todayTotalWalletAmount.toFixed(2),
+                todayTotalWithdraw: todayTotalWithdrawAmount.toFixed(2),
+                todayTotalAdminCommission: todayAdminCommissionAmount.toFixed(2),
             }
 
             return sendResponse(res, StatusCodes.OK, "Successfully get dashboard details", dashBoardDetails);

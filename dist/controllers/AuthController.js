@@ -96,6 +96,7 @@ class AuthController {
                 mobileLogin['otp'] = null;
                 const userData = await data_source_1.default.getRepository(user_entity_1.User).save(mobileLogin);
                 const token = jsonwebtoken_1.default.sign({ userId: mobileLogin?.id }, "dHPaQEEL]Y]5X;HOAC[kF1DNF(9eC4vs", { expiresIn: '48h' });
+                userData['amount'] = Number(userData['amount'])?.toFixed(2);
                 return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "OTP Verify Successfully", userData, null, token);
                 // return sendResponse(res, StatusCodes.OK, "OTP Verify Successfully", userData);
             }

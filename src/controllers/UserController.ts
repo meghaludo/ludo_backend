@@ -282,11 +282,11 @@ export class UserController {
                 return errorResponse(res, StatusCodes.NOT_FOUND, 'Withdraw Min Amount Rs. 190');
             }
 
-            const userDetails : any = await AppDataSource.getRepository(User).findOne({
+            const userDetails: any = await AppDataSource.getRepository(User).findOne({
                 where: { id: Number(req?.userId) }
             });
 
-            if(Number(userDetails['amount']) < Number(withdrawDetails?.amount)) {
+            if (Number(userDetails['amount']) < Number(withdrawDetails?.amount)) {
                 return errorResponse(res, StatusCodes.NOT_FOUND, 'Please check your balance');
             }
 
@@ -340,7 +340,10 @@ export class UserController {
                 where: { id: req?.userId }
             });
 
-            return sendResponse(res, StatusCodes.OK, "User Wallet Amount Successfully Get", { walletAmount: walletAmount?.amount });
+            let amount: number = 0;
+            amount = Number(walletAmount?.amount) || 0;
+
+            return sendResponse(res, StatusCodes.OK, "User Wallet Amount Successfully Get", { walletAmount: amount.toFixed(2) });
         } catch (error) {
             return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
         }

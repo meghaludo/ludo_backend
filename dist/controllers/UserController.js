@@ -305,7 +305,9 @@ class UserController {
             const walletAmount = await data_source_1.default.getRepository(user_entity_1.User).findOne({
                 where: { id: req?.userId }
             });
-            return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "User Wallet Amount Successfully Get", { walletAmount: walletAmount?.amount });
+            let amount = 0;
+            amount = Number(walletAmount?.amount) || 0;
+            return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "User Wallet Amount Successfully Get", { walletAmount: amount.toFixed(2) });
         }
         catch (error) {
             return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, message_1.INTERNAL_SERVER_ERROR, error);

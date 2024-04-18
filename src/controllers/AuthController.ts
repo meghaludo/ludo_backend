@@ -109,10 +109,12 @@ export class AuthController {
 
             if (mobileLogin['otp'] == String(otp)) {
                 mobileLogin['otp'] = null;
-                const userData = await AppDataSource.getRepository(User).save(mobileLogin);
+                const userData : any = await AppDataSource.getRepository(User).save(mobileLogin);
 
                 const token = jwt.sign({ userId: mobileLogin?.id }, "dHPaQEEL]Y]5X;HOAC[kF1DNF(9eC4vs", { expiresIn: '48h' });
 
+                userData['amount'] = Number(userData['amount'])?.toFixed(2);
+                
                 return sendResponse(res, StatusCodes.OK, "OTP Verify Successfully", userData, null, token);
 
                 // return sendResponse(res, StatusCodes.OK, "OTP Verify Successfully", userData);
