@@ -350,6 +350,9 @@ class GameController {
     async winGameResult2(req, res) {
         try {
             const winPayload = req?.body;
+            // const io = getIO();
+            // io.emit('declare_game_result', { title: 'Generate Game', data: { game_table_id: winPayload?.game_table_id, user_id: [5, 6] } });
+            // return
             const fileDataArray = req?.files;
             if (fileDataArray?.length == 0) {
                 return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.NOT_FOUND, 'PLease Upload Image.');
@@ -379,8 +382,10 @@ class GameController {
             const gamePlayerList = await data_source_1.default.getRepository(gamePlayer_entity_1.GamePlayer).find({
                 where: { game_table_id: Number(winPayload?.game_table_id) }
             });
+            let userIds = [];
             // Set game Status and add wining amount
             await gamePlayerList?.map(async (element) => {
+                userIds.push(element?.p_id);
                 if (element?.p_id == req?.userId) {
                     element['p_status'] = gameStatus_1.PlayerStatus.Winner;
                     element['image'] = fileDataArray[0]?.filename || element['image'];
@@ -459,7 +464,7 @@ class GameController {
             const updateGameData = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).save(gameDetails);
             setTimeout(() => {
                 const io = (0, socket_1.getIO)();
-                io.emit('generate_game_code', { title: 'Generate Game', data: { game_table_id: Number(winPayload?.game_table_id) } });
+                io.emit('declare_game_result', { title: 'Generate Game', data: { game_table_id: winPayload?.game_table_id, user_id: userIds } });
             }, 1000);
             return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Successfully update", updateGameData);
         }

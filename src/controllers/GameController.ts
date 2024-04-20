@@ -438,6 +438,10 @@ export class GameController {
         try {
             const winPayload: any = req?.body;
 
+            // const io = getIO();
+            // io.emit('declare_game_result', { title: 'Generate Game', data: { game_table_id: winPayload?.game_table_id, user_id: [5, 6] } });
+
+            // return
             const fileDataArray = req?.files;
             if (fileDataArray?.length == 0) {
                 return errorResponse(res, StatusCodes.NOT_FOUND, 'PLease Upload Image.');
@@ -473,8 +477,11 @@ export class GameController {
                 where: { game_table_id: Number(winPayload?.game_table_id) }
             });
 
+            let userIds: any = [];
+
             // Set game Status and add wining amount
             await gamePlayerList?.map(async (element) => {
+                userIds.push(element?.p_id);
                 if (element?.p_id == req?.userId) {
                     element['p_status'] = PlayerStatus.Winner;
                     element['image'] = fileDataArray[0]?.filename || element['image'];
@@ -573,7 +580,7 @@ export class GameController {
 
             setTimeout(() => {
                 const io = getIO();
-                io.emit('generate_game_code', { title: 'Generate Game', data: { game_table_id: Number(winPayload?.game_table_id) } });
+                io.emit('declare_game_result', { title: 'Generate Game', data: { game_table_id: winPayload?.game_table_id, user_id: userIds } });
             }, 1000);
 
             return sendResponse(res, StatusCodes.OK, "Successfully update", updateGameData);
@@ -895,7 +902,7 @@ export class GameController {
     public async adminGameHistory(req: any, res: any) {
         try {
             const gameList = await AppDataSource.getRepository(GameTable).find({
-                where : { status : Number(req?.query?.status) || 4 },
+                where: { status: Number(req?.query?.status) || 4 },
                 relations: ['gameOwner', 'gamePlayer']
             });
 
