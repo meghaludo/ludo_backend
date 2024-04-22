@@ -17,7 +17,7 @@ const axios_1 = __importDefault(require("axios"));
 class AuthController {
     // Login user
     async login(req, res) {
-        const { userName } = req?.body;
+        const { userName, password } = req?.body;
         try {
             // const emailLogin: any = await AppDataSource.getRepository(User).findOne({
             //     where: { email: userName }
@@ -28,44 +28,40 @@ class AuthController {
             const mobileLogin = await data_source_1.default.getRepository(user_entity_1.User).findOne({
                 where: { mobile_no: userName }
             });
-            if (mobileLogin && mobileLogin?.status != 1) {
-                return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.NOT_FOUND, 'User is Block Please contact To Administrator');
-            }
-            console.log('mobileLogin', mobileLogin);
             if (!mobileLogin) {
                 return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.NOT_FOUND, 'User Not Found Enter Valid UserName');
             }
-            const OTP = Math.floor(Math.random() * 9000) + 1000;
-            const baseURL = 'https://www.fast2sms.com/dev/bulkV2';
-            let params = {
-                authorization: 'CwYEiWkHmg7a3PyTB1xGvzI2JMn0Zsf59eqSXuNOFDbdcAhrpjcuzXOTbvmgIG6kLn2D7SdVwAtJohZU',
-                route: 'otp',
-                variables_values: String(OTP),
-                numbers: mobileLogin['mobile_no'],
-                flash: '0',
-            };
-            const response = await axios_1.default.get(baseURL, { params });
-            if (response.status >= 200 && response.status < 300) {
-                console.log('SMS sent successfully:', response.data);
-                mobileLogin['otp'] = String(OTP);
-                await data_source_1.default.getRepository(user_entity_1.User).save(mobileLogin);
-                params = {};
-                return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "OTP Send Successfully", response.data);
-                // Handle success response
+            if (mobileLogin && mobileLogin?.status != 1) {
+                return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.NOT_FOUND, 'User is Block Please contact To Administrator');
             }
-            else {
-                console.error('Error sending SMS:', response.status, response.data);
-                (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, 'Please Retry After Sometime');
-                // Handle error response
+            const passwordMatch = await (0, generateHashPassword_1.matchPassword)(mobileLogin?.password, password);
+            if (!passwordMatch) {
+                return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.UNAUTHORIZED, 'Invalid Password');
             }
-            // if (mobileLogin) {
-            //     const passwordMatch = await matchPassword(mobileLogin?.password, password);
-            //     if (!passwordMatch) {
-            //         return errorResponse(res, StatusCodes.UNAUTHORIZED, 'Invalid Credentials');
-            //     }
-            //     const token = jwt.sign({ userId: mobileLogin?.id }, "dHPaQEEL]Y]5X;HOAC[kF1DNF(9eC4vs", { expiresIn: '8h' });
+            const token = jsonwebtoken_1.default.sign({ userId: mobileLogin?.id }, "dHPaQEEL]Y]5X;HOAC[kF1DNF(9eC4vs", { expiresIn: '8h' });
+            return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "User Login Successfully", mobileLogin, null, token);
+            // const OTP = Math.floor(Math.random() * 9000) + 1000;
+            // const baseURL = 'https://www.fast2sms.com/dev/bulkV2';
+            // let params: any = {
+            //     authorization: 'CwYEiWkHmg7a3PyTB1xGvzI2JMn0Zsf59eqSXuNOFDbdcAhrpjcuzXOTbvmgIG6kLn2D7SdVwAtJohZU',
+            //     route: 'otp',
+            //     variables_values: String(OTP),
+            //     numbers: mobileLogin['mobile_no'],
+            //     flash: '0',
+            // };
+            // const response: any = await axios.get(baseURL, { params });
+            // if (response.status >= 200 && response.status < 300) {
+            //     console.log('SMS sent successfully:', response.data);
+            //     mobileLogin['otp'] = String(OTP);
+            //     await AppDataSource.getRepository(User).save(mobileLogin);
+            //     params = {};
+            //     return sendResponse(res, StatusCodes.OK, "OTP Send Successfully", response.data);
+            //     // Handle success response
+            // } else {
+            //     console.error('Error sending SMS:', response.status, response.data);
+            //     errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, 'Please Retry After Sometime');
+            //     // Handle error response
             // }
-            //     return sendResponse(res, StatusCodes.OK, "User Login Successfully", mobileLogin, null, token);
             // }
             // if (emailLogin) {
             //     const passwordMatch = await matchPassword(emailLogin?.password, password);
@@ -113,21 +109,23 @@ class AuthController {
     async register(req, res) {
         try {
             const userData = req?.body;
-            if (!userData['email'] && !userData['mobile_no']) {
+            if (!userData['mobile_no']) {
                 return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.NOT_FOUND, "Please Enter Mobile Number / Email.");
             }
-            if (userData['email']) {
-                const existingUserWithEmail = await data_source_1.default.getRepository(user_entity_1.User).findOne({ where: { email: String(req?.body?.email) } });
-                if (existingUserWithEmail) {
-                    return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.CONFLICT, "Email Already Exist");
-                }
+            // if (userData['email']) {
+            //     const existingUserWithEmail: any = await AppDataSource.getRepository(User).findOne(
+            //         { where: { email: String(req?.body?.email) } }
+            //     );
+            //     if (existingUserWithEmail) {
+            //         return errorResponse(res, StatusCodes.CONFLICT, "Email Already Exist");
+            //     }
+            // }
+            // if (userData['mobile_no']) {
+            const existingUserWithMobile = await data_source_1.default.getRepository(user_entity_1.User).findOne({ where: { mobile_no: String(req?.body?.mobile_no) } });
+            if (existingUserWithMobile) {
+                return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.CONFLICT, "Mobile Number Already Exist");
             }
-            if (userData['mobile_no']) {
-                const existingUserWithMobile = await data_source_1.default.getRepository(user_entity_1.User).findOne({ where: { mobile_no: String(req?.body?.mobile_no) } });
-                if (existingUserWithMobile) {
-                    return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.CONFLICT, "Mobile Number Already Exist");
-                }
-            }
+            // }
             const enterUserData = {
                 full_name: userData?.full_name || null,
                 ludo_name: userData?.full_name || 'test',
@@ -164,21 +162,19 @@ class AuthController {
     async verifyUserName(req, res) {
         const { userName } = req?.body;
         try {
-            const emailLogin = await data_source_1.default.getRepository(user_entity_1.User).findOne({
-                where: { email: userName }
-            });
+            // const emailLogin: any = await AppDataSource.getRepository(User).findOne({
+            //     where: { email: userName }
+            // });
             const mobileLogin = await data_source_1.default.getRepository(user_entity_1.User).findOne({
                 where: { mobile_no: userName }
             });
-            if (!emailLogin && !mobileLogin) {
+            if (!mobileLogin) {
                 return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.NOT_FOUND, 'User Not Found Enter Valid UserName');
             }
-            if (mobileLogin) {
-                return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "UserName Verify Successfully", mobileLogin);
-            }
-            if (emailLogin) {
-                return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "UserName Verify Successfully", emailLogin);
-            }
+            return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "UserName Verify Successfully", mobileLogin);
+            // if (emailLogin) {
+            //     return sendResponse(res, StatusCodes.OK, "UserName Verify Successfully", emailLogin);
+            // }
         }
         catch (error) {
             return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, message_1.INTERNAL_SERVER_ERROR, error);
@@ -188,27 +184,25 @@ class AuthController {
     async forgotPassword(req, res) {
         const { userName, password } = req?.body;
         try {
-            const emailLogin = await data_source_1.default.getRepository(user_entity_1.User).findOne({
-                where: { email: userName }
-            });
+            // const emailLogin: any = await AppDataSource.getRepository(User).findOne({
+            //     where: { email: userName }
+            // });
             const mobileLogin = await data_source_1.default.getRepository(user_entity_1.User).findOne({
                 where: { mobile_no: userName }
             });
-            if (!emailLogin && !mobileLogin) {
+            if (!mobileLogin) {
                 return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.NOT_FOUND, 'User Not Found Enter Valid UserName');
             }
-            if (mobileLogin) {
-                const cryptoPassword = (0, generateHashPassword_1.generateHashPassword)(password);
-                mobileLogin['password'] = cryptoPassword;
-                const updateUserWithMobileNumber = await data_source_1.default.getRepository(user_entity_1.User).save(mobileLogin);
-                return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Password Updated", updateUserWithMobileNumber);
-            }
-            if (emailLogin) {
-                const cryptoPassword = (0, generateHashPassword_1.generateHashPassword)(password);
-                emailLogin['password'] = cryptoPassword;
-                const updateUserWithEmail = await data_source_1.default.getRepository(user_entity_1.User).save(emailLogin);
-                return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Password Updated", updateUserWithEmail);
-            }
+            const cryptoPassword = (0, generateHashPassword_1.generateHashPassword)(password);
+            mobileLogin['password'] = cryptoPassword;
+            const updateUserWithMobileNumber = await data_source_1.default.getRepository(user_entity_1.User).save(mobileLogin);
+            return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Password Updated", updateUserWithMobileNumber);
+            // if (emailLogin) {
+            //     const cryptoPassword = generateHashPassword(password);
+            //     emailLogin['password'] = cryptoPassword;
+            //     const updateUserWithEmail = await AppDataSource.getRepository(User).save(emailLogin);
+            //     return sendResponse(res, StatusCodes.OK, "Password Updated", updateUserWithEmail);
+            // }
         }
         catch (error) {
             return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, message_1.INTERNAL_SERVER_ERROR, error);
@@ -266,7 +260,7 @@ class AuthController {
                 };
                 const response = await axios_1.default.get(baseURL, { params });
                 if (response.status >= 200 && response.status < 300) {
-                    return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "OTP Send Successfully", response.data);
+                    return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "OTP Send Successfully", { ...response.data, otp: OTP });
                 }
                 else {
                     return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, 'Please Retry After Sometime');
