@@ -329,6 +329,7 @@ export class AuthController {
                 return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, 'Please Retry After Sometime');
             }
         } catch (error) {
+            console.log('errorerrorerrorerrorerror', error)
             return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
         }
     }

@@ -13,6 +13,7 @@ import { ReferTable } from "./entity/referUser.entiry";
 import { UserNotification } from "./entity/userNotification.entity";
 import { Notification } from "./entity/notifucation.entity";
 import { PaymentMobile } from "./entity/paymentMobile.entity";
+import { UserPenalty } from "./entity/userPenalty.entiry";
 
 // export const AppDataSource = new DataSource({
 //   type: "mysql",
@@ -55,7 +56,8 @@ export const AppDataSource = new DataSource({
     UserNotification,
     UserWallet,
     Withdraw,
-    PaymentMobile
+    PaymentMobile,
+    UserPenalty
   ],
   // entities: ["entity/*.entity.{ts,js}"],
   logging: true,

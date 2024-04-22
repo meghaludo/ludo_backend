@@ -271,6 +271,7 @@ class AuthController {
             }
         }
         catch (error) {
+            console.log('errorerrorerrorerrorerror', error);
             return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, message_1.INTERNAL_SERVER_ERROR, error);
         }
     }

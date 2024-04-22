@@ -8,6 +8,7 @@ import userCommonRoute from "./userCommonRoute";
 import gameRoute from "./gameRoute";
 import notificationRoute from "./notificaionRoute";
 import userNotificationRoute from "./userNotificationRoute";
+import penaltyRoute from "./penltyRoute";
 
 const mainRoutes = Router();
 
@@ -22,6 +23,10 @@ mainRoutes.use('/admin', verifyToken, adminRoute);
 
 // Game APIs
 mainRoutes.use("/game", verifyToken, gameRoute);
+
+// penalty APIS
+mainRoutes.use("/penalty", verifyToken, penaltyRoute);
+
 // mainRoutes.use("/game", gameRoute);
 mainRoutes.use("/notification", notificationRoute);
 mainRoutes.use("/page-notification", userNotificationRoute);

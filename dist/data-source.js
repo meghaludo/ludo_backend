@@ -16,6 +16,7 @@ const referUser_entiry_1 = require("./entity/referUser.entiry");
 const userNotification_entity_1 = require("./entity/userNotification.entity");
 const notifucation_entity_1 = require("./entity/notifucation.entity");
 const paymentMobile_entity_1 = require("./entity/paymentMobile.entity");
+const userPenalty_entiry_1 = require("./entity/userPenalty.entiry");
 // export const AppDataSource = new DataSource({
 //   type: "mysql",
 //   host: "localhost",
@@ -56,7 +57,8 @@ exports.AppDataSource = new typeorm_1.DataSource({
         userNotification_entity_1.UserNotification,
         wallet_entity_1.UserWallet,
         withdraw_entity_1.Withdraw,
-        paymentMobile_entity_1.PaymentMobile
+        paymentMobile_entity_1.PaymentMobile,
+        userPenalty_entiry_1.UserPenalty
     ],
     // entities: ["entity/*.entity.{ts,js}"],
     logging: true,

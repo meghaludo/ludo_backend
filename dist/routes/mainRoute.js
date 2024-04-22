@@ -13,6 +13,7 @@ const userCommonRoute_1 = __importDefault(require("./userCommonRoute"));
 const gameRoute_1 = __importDefault(require("./gameRoute"));
 const notificaionRoute_1 = __importDefault(require("./notificaionRoute"));
 const userNotificationRoute_1 = __importDefault(require("./userNotificationRoute"));
+const penltyRoute_1 = __importDefault(require("./penltyRoute"));
 const mainRoutes = (0, express_1.Router)();
 // Usr APIS
 mainRoutes.use('/user/auth', authRoute_1.default);
@@ -23,6 +24,8 @@ mainRoutes.use('/admin/auth', adminAuthRoute_1.default);
 mainRoutes.use('/admin', tokenMiddleware_1.verifyToken, adminRoute_1.default);
 // Game APIs
 mainRoutes.use("/game", tokenMiddleware_1.verifyToken, gameRoute_1.default);
+// penalty APIS
+mainRoutes.use("/penalty", tokenMiddleware_1.verifyToken, penltyRoute_1.default);
 // mainRoutes.use("/game", gameRoute);
 mainRoutes.use("/notification", notificaionRoute_1.default);
 mainRoutes.use("/page-notification", userNotificationRoute_1.default);
