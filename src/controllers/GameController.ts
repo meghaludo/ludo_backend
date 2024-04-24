@@ -438,6 +438,13 @@ export class GameController {
         try {
             const winPayload: any = req?.body;
 
+            const winingPlayerData: any = await AppDataSource.getRepository(GamePlayer).findOne({
+                where: { game_table_id: Number(winPayload?.game_table_id), p_id: Number(req?.userId) }
+            });
+
+            if (winingPlayerData?.p_status == 4 || winingPlayerData?.p_status == 5 || winingPlayerData?.p_status == 6 || winingPlayerData?.p_status == 7) {
+                return errorResponse(res, StatusCodes.NOT_FOUND, 'Game Result Already Defined');
+            }
             // const io = getIO();
             // io.emit('declare_game_result', { title: 'Generate Game', data: { game_table_id: winPayload?.game_table_id, user_id: [5, 6] } });
 
@@ -744,6 +751,14 @@ export class GameController {
         try {
             const winPayload: any = req?.body;
 
+            const winingPlayerData: any = await AppDataSource.getRepository(GamePlayer).findOne({
+                where: { game_table_id: Number(winPayload?.game_table_id), p_id: Number(req?.userId) }
+            });
+
+            if (winingPlayerData?.p_status == 4 || winingPlayerData?.p_status == 5 || winingPlayerData?.p_status == 6 || winingPlayerData?.p_status == 7) {
+                return errorResponse(res, StatusCodes.NOT_FOUND, 'Game Result Already Defined');
+            }
+            
             const gameDetails: any = await AppDataSource.getRepository(GameTable).findOne({
                 where: { id: Number(winPayload?.game_table_id) }
             })

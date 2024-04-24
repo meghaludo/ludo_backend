@@ -350,6 +350,12 @@ class GameController {
     async winGameResult2(req, res) {
         try {
             const winPayload = req?.body;
+            const winingPlayerData = await data_source_1.default.getRepository(gamePlayer_entity_1.GamePlayer).findOne({
+                where: { game_table_id: Number(winPayload?.game_table_id), p_id: Number(req?.userId) }
+            });
+            if (winingPlayerData?.p_status == 4 || winingPlayerData?.p_status == 5 || winingPlayerData?.p_status == 6 || winingPlayerData?.p_status == 7) {
+                return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.NOT_FOUND, 'Game Result Already Defined');
+            }
             // const io = getIO();
             // io.emit('declare_game_result', { title: 'Generate Game', data: { game_table_id: winPayload?.game_table_id, user_id: [5, 6] } });
             // return
@@ -594,6 +600,12 @@ class GameController {
     async looseGameResult2(req, res) {
         try {
             const winPayload = req?.body;
+            const winingPlayerData = await data_source_1.default.getRepository(gamePlayer_entity_1.GamePlayer).findOne({
+                where: { game_table_id: Number(winPayload?.game_table_id), p_id: Number(req?.userId) }
+            });
+            if (winingPlayerData?.p_status == 4 || winingPlayerData?.p_status == 5 || winingPlayerData?.p_status == 6 || winingPlayerData?.p_status == 7) {
+                return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.NOT_FOUND, 'Game Result Already Defined');
+            }
             const gameDetails = await data_source_1.default.getRepository(gameTable_entity_1.GameTable).findOne({
                 where: { id: Number(winPayload?.game_table_id) }
             });
