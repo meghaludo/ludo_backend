@@ -15,14 +15,6 @@ export class AuthController {
         const { userName, password } = req?.body;
 
         try {
-            // const emailLogin: any = await AppDataSource.getRepository(User).findOne({
-            //     where: { email: userName }
-            // });
-
-            // if (emailLogin && emailLogin?.status != 1) {
-            //     return errorResponse(res, StatusCodes.NOT_FOUND, 'User is Block Please contact To Administrator');
-            // }
-
             const mobileLogin: any = await AppDataSource.getRepository(User).findOne({
                 where: { mobile_no: userName }
             });
@@ -43,51 +35,6 @@ export class AuthController {
 
             const token = jwt.sign({ userId: mobileLogin?.id }, "dHPaQEEL]Y]5X;HOAC[kF1DNF(9eC4vs", { expiresIn: '8h' });
             return sendResponse(res, StatusCodes.OK, "User Login Successfully", mobileLogin, null, token);
-
-            // const OTP = Math.floor(Math.random() * 9000) + 1000;
-
-            // const baseURL = 'https://www.fast2sms.com/dev/bulkV2';
-            // let params: any = {
-            //     authorization: 'CwYEiWkHmg7a3PyTB1xGvzI2JMn0Zsf59eqSXuNOFDbdcAhrpjcuzXOTbvmgIG6kLn2D7SdVwAtJohZU',
-            //     route: 'otp',
-            //     variables_values: String(OTP),
-            //     numbers: mobileLogin['mobile_no'],
-            //     flash: '0',
-            // };
-
-            // const response: any = await axios.get(baseURL, { params });
-
-            // if (response.status >= 200 && response.status < 300) {
-            //     console.log('SMS sent successfully:', response.data);
-
-            //     mobileLogin['otp'] = String(OTP);
-            //     await AppDataSource.getRepository(User).save(mobileLogin);
-
-            //     params = {};
-
-            //     return sendResponse(res, StatusCodes.OK, "OTP Send Successfully", response.data);
-            //     // Handle success response
-            // } else {
-            //     console.error('Error sending SMS:', response.status, response.data);
-            //     errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, 'Please Retry After Sometime');
-            //     // Handle error response
-            // }
-
-
-            // }
-
-            // if (emailLogin) {
-            //     const passwordMatch = await matchPassword(emailLogin?.password, password);
-
-            //     if (!passwordMatch) {
-            //         return errorResponse(res, StatusCodes.UNAUTHORIZED, 'Invalid Credentials');
-            //     }
-
-            //     const token = jwt.sign({ userId: emailLogin?.id }, "dHPaQEEL]Y]5X;HOAC[kF1DNF(9eC4vs", { expiresIn: '8h' });
-
-            //     return sendResponse(res, StatusCodes.OK, "User Login Successfully", emailLogin, null, token);
-            // }
-            // return sendResponse(res, StatusCodes.OK, "User Login Successfully", mobileLogin, null, token);
         } catch (error) {
             console.log('errror', error);
             return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
@@ -96,29 +43,41 @@ export class AuthController {
 
     // verify OTP
     public async verifyOTP(req: any, res: any) {
-        const { userName, otp } = req?.body;
+        const { userName, otp, type } = req?.body;
         try {
             const mobileLogin: any = await AppDataSource.getRepository(User).findOne({
                 where: { mobile_no: userName }
             });
 
-            if (mobileLogin && mobileLogin?.status != 1) {
-                return errorResponse(res, StatusCodes.NOT_FOUND, 'User is Block Please contact To Administrator');
+            if (!mobileLogin) {
+                return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, 'User Not Found')
             }
 
-            if (mobileLogin['otp'] == String(otp)) {
-                mobileLogin['otp'] = null;
-                const userData: any = await AppDataSource.getRepository(User).save(mobileLogin);
+            if (type == 'registerOTP') {
+                if (mobileLogin['otp'] == String(otp)) {
+                    mobileLogin['otp'] = null;
+                    mobileLogin['status'] = 1;
+                    const userData: any = await AppDataSource.getRepository(User).save(mobileLogin);
+                    return sendResponse(res, StatusCodes.OK, "OTP Verify Successfully", userData);
+                } else {
+                    return errorResponse(res, StatusCodes.NOT_FOUND, 'Invalid OTP');
+                }
+            }
 
-                const token = jwt.sign({ userId: mobileLogin?.id }, "dHPaQEEL]Y]5X;HOAC[kF1DNF(9eC4vs", { expiresIn: '48h' });
 
-                userData['amount'] = Number(userData['amount'])?.toFixed(2);
+            if (type == 'forgotPassword') {
+                if (mobileLogin && mobileLogin?.status != 1) {
+                    return errorResponse(res, StatusCodes.NOT_FOUND, 'User is Block Please contact To Administrator');
+                }
 
-                return sendResponse(res, StatusCodes.OK, "OTP Verify Successfully", userData, null, token);
+                if (mobileLogin['otp'] == String(otp)) {
+                    mobileLogin['otp'] = null;
+                    const userData: any = await AppDataSource.getRepository(User).save(mobileLogin);
 
-                // return sendResponse(res, StatusCodes.OK, "OTP Verify Successfully", userData);
-            } else {
-                return errorResponse(res, StatusCodes.NOT_FOUND, 'Invalid OTP');
+                    return sendResponse(res, StatusCodes.OK, "OTP Verify Successfully", userData);
+                } else {
+                    return errorResponse(res, StatusCodes.NOT_FOUND, 'Invalid OTP');
+                }
             }
         } catch (error) {
             console.log('errror', error);
@@ -132,62 +91,126 @@ export class AuthController {
             const userData: any = req?.body;
 
             if (!userData['mobile_no']) {
-                return errorResponse(res, StatusCodes.NOT_FOUND, "Please Enter Mobile Number / Email.");
+                return errorResponse(res, StatusCodes.NOT_FOUND, "Please Enter Mobile Number.");
             }
 
-            // if (userData['email']) {
-            //     const existingUserWithEmail: any = await AppDataSource.getRepository(User).findOne(
-            //         { where: { email: String(req?.body?.email) } }
-            //     );
-
-            //     if (existingUserWithEmail) {
-            //         return errorResponse(res, StatusCodes.CONFLICT, "Email Already Exist");
-            //     }
-            // }
-
-            // if (userData['mobile_no']) {
             const existingUserWithMobile: any = await AppDataSource.getRepository(User).findOne(
                 { where: { mobile_no: String(req?.body?.mobile_no) } }
             );
 
-            if (existingUserWithMobile) {
+            if (existingUserWithMobile && existingUserWithMobile['status'] == 1) {
                 return errorResponse(res, StatusCodes.CONFLICT, "Mobile Number Already Exist");
             }
-            // }
 
-            const enterUserData: any = {
-                full_name: userData?.full_name || null,
-                ludo_name: userData?.full_name || 'test',
-                mobile_no: userData?.mobile_no || null,
-                email: userData?.email || null,
-                password: userData?.password || null,
-                game_key: `megaludo24${generateRandomNumberString(15)}`
+            // if user not active and verify OTP 
+            if (existingUserWithMobile && existingUserWithMobile['status'] == 0) {
+                // opt send functionality
+                const OTP = Math.floor(Math.random() * 9000) + 1000;
+
+                const baseURL = 'https://www.fast2sms.com/dev/bulkV2';
+
+                let params: any = {
+                    authorization: 'CwYEiWkHmg7a3PyTB1xGvzI2JMn0Zsf59eqSXuNOFDbdcAhrpjcuzXOTbvmgIG6kLn2D7SdVwAtJohZU',
+                    route: 'otp',
+                    variables_values: String(OTP),
+                    numbers: existingUserWithMobile['mobile_no'],
+                    flash: '0',
+                };
+
+                const response: any = await axios.get(baseURL, { params });
+
+                if (response.status >= 200 && response.status < 300) {
+                    existingUserWithMobile['full_name'] = userData?.full_name || null;
+                    existingUserWithMobile['otp'] = String(OTP);
+                    existingUserWithMobile['email'] = userData?.email || null;
+                    existingUserWithMobile['status'] = 0;
+
+                    const cryptoPassword = generateHashPassword(userData['password']);
+                    existingUserWithMobile['password'] = cryptoPassword;
+
+                    let userCreate = await AppDataSource.getRepository(User).save(existingUserWithMobile);
+
+                    if (!!userData?.code && existingUserWithMobile?.reference_user_id == 0) {
+                        const userWithCode: any = await AppDataSource.getRepository(User).findOne({
+                            where: { refer_code: userData['code'] }
+                        });
+
+                        if (userWithCode) {
+                            userWithCode['reference_user_id'] = userWithCode?.id;
+                            const referTableData = {
+                                user_id: userCreate?.id,
+                                refrence_user_id: userWithCode?.id,
+                                code: userData['code']
+                            }
+                            await AppDataSource.getRepository(ReferTable).save(referTableData);
+                            userCreate = await AppDataSource.getRepository(User).save(userWithCode);
+                        }
+                    }
+
+                    return sendResponse(res, StatusCodes.OK, 'Login Successfully', userCreate);
+                } else {
+                    return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, 'Please Retry After Sometime');
+                }
+
+
             }
 
-            // const cryptoPassword = generateHashPassword(userData['password']);
-            // enterUserData['password'] = cryptoPassword;
-            enterUserData['refer_code'] = generateRandomString(7);
+            if (!existingUserWithMobile) {
+                // opt send functionality
+                const OTP = Math.floor(Math.random() * 9000) + 1000;
 
-            const userCreate = await AppDataSource.getRepository(User).save(enterUserData);
+                const baseURL = 'https://www.fast2sms.com/dev/bulkV2';
+                let params: any = {
+                    authorization: 'CwYEiWkHmg7a3PyTB1xGvzI2JMn0Zsf59eqSXuNOFDbdcAhrpjcuzXOTbvmgIG6kLn2D7SdVwAtJohZU',
+                    route: 'otp',
+                    variables_values: String(OTP),
+                    numbers: userData['mobile_no'],
+                    flash: '0',
+                };
 
-            if (!!userData?.code) {
-                const userWithCode = await AppDataSource.getRepository(User).findOne({
-                    where: { refer_code: userData['code'] }
-                });
+                const response: any = await axios.get(baseURL, { params });
 
-                if (userWithCode) {
-                    enterUserData['reference_user_id'] = userWithCode?.id;
-                    const referTableData = {
-                        user_id: userCreate?.id,
-                        refrence_user_id: userWithCode?.id,
-                        code: userData['code']
+                if (response?.status >= 200 && response?.status < 300) {
+                    const enterUserData: any = {
+                        full_name: userData?.full_name || null,
+                        ludo_name: userData?.full_name || 'test',
+                        mobile_no: userData?.mobile_no || null,
+                        email: userData?.email || null,
+                        otp: String(OTP),
+                        password: userData?.password || null,
+                        game_key: `megaludo24${generateRandomNumberString(15)}`,
+                        status: 0
                     }
-                    await AppDataSource.getRepository(ReferTable).save(referTableData);
+
+                    const cryptoPassword = generateHashPassword(userData['password']);
+                    enterUserData['password'] = cryptoPassword;
+                    enterUserData['refer_code'] = generateRandomString(7);
+
+                    let userCreate = await AppDataSource.getRepository(User).save(enterUserData);
+
+                    if (!!userData?.code) {
+                        const userWithCode: any = await AppDataSource.getRepository(User).findOne({
+                            where: { refer_code: userData['code'] }
+                        });
+
+                        if (userWithCode) {
+                            userWithCode['reference_user_id'] = userWithCode?.id;
+                            const referTableData = {
+                                user_id: userCreate?.id,
+                                refrence_user_id: userWithCode?.id,
+                                code: userData['code']
+                            }
+                            await AppDataSource.getRepository(ReferTable).save(referTableData);
+                            userCreate = await AppDataSource.getRepository(User).save(userWithCode);
+                        }
+                    }
+                    return sendResponse(res, StatusCodes.OK, 'Login Successfully', userCreate);
+                } else {
+                    return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, 'Please Retry After Sometime');
                 }
             }
-
-            return sendResponse(res, StatusCodes.OK, 'Login Successfully', userCreate);
         } catch (error) {
+            console.log('error', error);
             return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
         }
     }
@@ -196,10 +219,6 @@ export class AuthController {
     public async verifyUserName(req: any, res: any) {
         const { userName } = req?.body;
         try {
-            // const emailLogin: any = await AppDataSource.getRepository(User).findOne({
-            //     where: { email: userName }
-            // });
-
             const mobileLogin: any = await AppDataSource.getRepository(User).findOne({
                 where: { mobile_no: userName }
             });
@@ -208,12 +227,34 @@ export class AuthController {
                 return errorResponse(res, StatusCodes.NOT_FOUND, 'User Not Found Enter Valid UserName');
             }
 
-            return sendResponse(res, StatusCodes.OK, "UserName Verify Successfully", mobileLogin);
+            if (mobileLogin && mobileLogin?.status != 1) {
+                return errorResponse(res, StatusCodes.NOT_FOUND, 'User is Block Please contact To Administrator');
+            }
 
-            // if (emailLogin) {
-            //     return sendResponse(res, StatusCodes.OK, "UserName Verify Successfully", emailLogin);
-            // }
+            const OTP = Math.floor(Math.random() * 9000) + 1000;
+
+            const baseURL = 'https://www.fast2sms.com/dev/bulkV2';
+            let params: any = {
+                authorization: 'CwYEiWkHmg7a3PyTB1xGvzI2JMn0Zsf59eqSXuNOFDbdcAhrpjcuzXOTbvmgIG6kLn2D7SdVwAtJohZU',
+                route: 'otp',
+                variables_values: String(OTP),
+                numbers: mobileLogin['mobile_no'],
+                flash: '0',
+            };
+
+            const response: any = await axios.get(baseURL, { params });
+
+            if (response.status >= 200 && response.status < 300) {
+                mobileLogin['otp'] = String(OTP);
+                let userData = await AppDataSource.getRepository(User).save(mobileLogin);
+
+                return sendResponse(res, StatusCodes.OK, "OTP Send Successfully", userData);
+            } else {
+                return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, 'Please Retry After Sometime');
+            }
         } catch (error) {
+
+            console.log('error', error);
             return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
         }
     }
@@ -222,10 +263,6 @@ export class AuthController {
     public async forgotPassword(req: any, res: any) {
         const { userName, password } = req?.body;
         try {
-            // const emailLogin: any = await AppDataSource.getRepository(User).findOne({
-            //     where: { email: userName }
-            // });
-
             const mobileLogin: any = await AppDataSource.getRepository(User).findOne({
                 where: { mobile_no: userName }
             });
@@ -239,12 +276,6 @@ export class AuthController {
             const updateUserWithMobileNumber = await AppDataSource.getRepository(User).save(mobileLogin);
             return sendResponse(res, StatusCodes.OK, "Password Updated", updateUserWithMobileNumber);
 
-            // if (emailLogin) {
-            //     const cryptoPassword = generateHashPassword(password);
-            //     emailLogin['password'] = cryptoPassword;
-            //     const updateUserWithEmail = await AppDataSource.getRepository(User).save(emailLogin);
-            //     return sendResponse(res, StatusCodes.OK, "Password Updated", updateUserWithEmail);
-            // }
         } catch (error) {
             return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, error);
         }
@@ -295,37 +326,38 @@ export class AuthController {
         }
     }
 
+
     // send otp for verify mobileNumber
-    public async sendVerifyMobileNumber(req: any, res: any) {
+    public async resendOTP(req: any, res: any) {
         try {
             const payload = req?.body;
 
-            if (payload?.type == 'resendOtp') {
+            const mobileLogin: any = await AppDataSource.getRepository(User).findOne({
+                where: { mobile_no: payload?.userName }
+            });
 
+            if (!mobileLogin) {
+                return errorResponse(res, StatusCodes.NOT_FOUND, 'User Not Found Enter Valid UserName');
             }
 
-            if (payload?.type == 'registerOtp') {
-                const OTP = Math.floor(Math.random() * 9000) + 1000;
+            const OTP = Math.floor(Math.random() * 9000) + 1000;
 
-                const baseURL = 'https://www.fast2sms.com/dev/bulkV2';
-                let params: any = {
-                    authorization: 'CwYEiWkHmg7a3PyTB1xGvzI2JMn0Zsf59eqSXuNOFDbdcAhrpjcuzXOTbvmgIG6kLn2D7SdVwAtJohZU',
-                    route: 'otp',
-                    variables_values: String(OTP),
-                    numbers: payload['mobile_no'],
-                    flash: '0',
-                };
+            const baseURL = 'https://www.fast2sms.com/dev/bulkV2';
+            let params: any = {
+                authorization: 'CwYEiWkHmg7a3PyTB1xGvzI2JMn0Zsf59eqSXuNOFDbdcAhrpjcuzXOTbvmgIG6kLn2D7SdVwAtJohZU',
+                route: 'otp',
+                variables_values: String(OTP),
+                numbers: payload['mobile_no'],
+                flash: '0',
+            };
 
-                const response: any = await axios.get(baseURL, { params });
+            const response: any = await axios.get(baseURL, { params });
 
-                if (response.status >= 200 && response.status < 300) {
-                    return sendResponse(res, StatusCodes.OK, "OTP Send Successfully", {...response.data, otp : OTP});
-                } else {
-                    return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, 'Please Retry After Sometime');
-                }
-            }
-
-            if (payload?.type !== 'resendOtp' && payload?.type !== 'registerOtp') {
+            if (response.status >= 200 && response.status < 300) {
+                mobileLogin['otp'] = String(OTP);
+                const updateUser = await AppDataSource.getRepository(User).save(mobileLogin);
+                return sendResponse(res, StatusCodes.OK, "OTP Send Successfully", updateUser);
+            } else {
                 return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, 'Please Retry After Sometime');
             }
         } catch (error) {

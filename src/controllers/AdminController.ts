@@ -206,7 +206,8 @@ export class AdminController {
                 return errorResponse(res, StatusCodes.NOT_FOUND, 'Wallet Details Not Found');
             }
 
-            if (walletDetails['status'] === 1 && status == 2) {
+            // add amount in user amount
+            if ((walletDetails['status'] === 3 && status == 2) || (walletDetails['status'] === 1 && status == 2)) {
                 const userDetails: any = await AppDataSource.getRepository(User).findOne({
                     where: { id: walletDetails?.user_id }
                 });

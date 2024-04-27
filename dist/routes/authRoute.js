@@ -16,6 +16,6 @@ authRoutes.post('/admin-login', authController.adminLogin);
 authRoutes.post('/verify', authController.verifyUserName);
 // forgot-password
 authRoutes.post('/forgot-password', authController.forgotPassword);
-// Send OTP
-authRoutes.post('/send-otp', authController.sendVerifyMobileNumber);
+// resend OTP
+authRoutes.post('/resend-OTP', authController.resendOTP);
 exports.default = authRoutes;

@@ -1,5 +1,5 @@
-import {Router} from 'express';
-import {AuthController} from '../controllers/AuthController';
+import { Router } from 'express';
+import { AuthController } from '../controllers/AuthController';
 
 const authRoutes = Router();
 const authController = new AuthController();
@@ -21,7 +21,8 @@ authRoutes.post('/verify', authController.verifyUserName);
 
 // forgot-password
 authRoutes.post('/forgot-password', authController.forgotPassword);
-// Send OTP
-authRoutes.post('/send-otp', authController.sendVerifyMobileNumber);
+
+// resend OTP
+authRoutes.post('/resend-OTP', authController.resendOTP);
 
 export default authRoutes;

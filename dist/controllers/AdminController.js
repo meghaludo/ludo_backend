@@ -180,7 +180,8 @@ class AdminController {
             if (!walletDetails) {
                 return (0, responseUtil_1.errorResponse)(res, http_status_codes_1.StatusCodes.NOT_FOUND, 'Wallet Details Not Found');
             }
-            if (walletDetails['status'] === 1 && status == 2) {
+            // add amount in user amount
+            if ((walletDetails['status'] === 3 && status == 2) || (walletDetails['status'] === 1 && status == 2)) {
                 const userDetails = await data_source_1.default.getRepository(user_entity_1.User).findOne({
                     where: { id: walletDetails?.user_id }
                 });
