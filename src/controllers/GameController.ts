@@ -345,7 +345,7 @@ export class GameController {
                 gameDetails['status'] = GameStatus.Completed;
 
                 // add money in winner account
-                const findWinnerUsr = playerList?.find((element) => element.p_status == PlayerStatus.Winner);
+                const findWinnerUsr = playerList?.find((element : any) => element.p_status == PlayerStatus.Winner);
                 const winnerUser: any = await AppDataSource.getRepository(User).findOne({
                     where: { id: Number(findWinnerUsr?.p_id) }
                 });

@@ -9,6 +9,7 @@ import gameRoute from "./gameRoute";
 import notificationRoute from "./notificaionRoute";
 import userNotificationRoute from "./userNotificationRoute";
 import penaltyRoute from "./penltyRoute";
+import paymentRoute from "./paymentRoute";
 
 const mainRoutes = Router();
 
@@ -26,6 +27,9 @@ mainRoutes.use("/game", verifyToken, gameRoute);
 
 // penalty APIS
 mainRoutes.use("/penalty", verifyToken, penaltyRoute);
+
+// payment APIS
+mainRoutes.use("/payment", verifyToken, paymentRoute);
 
 // mainRoutes.use("/game", gameRoute);
 mainRoutes.use("/notification", notificationRoute);

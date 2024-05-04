@@ -16,6 +16,9 @@ export class UserWallet {
     order_id!: string;
 
     @Column({ type: 'varchar', length: 255, nullable: true })
+    client_txn_id!: string;
+
+    @Column({ type: 'varchar', length: 255, nullable: true })
     payment_type!: string;
     
     @Column({ type: 'int', default : 0,  nullable : false })

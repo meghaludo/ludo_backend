@@ -17,6 +17,7 @@ const userNotification_entity_1 = require("./entity/userNotification.entity");
 const notifucation_entity_1 = require("./entity/notifucation.entity");
 const paymentMobile_entity_1 = require("./entity/paymentMobile.entity");
 const userPenalty_entiry_1 = require("./entity/userPenalty.entiry");
+const payment_method_entity_1 = require("./entity/payment_method.entity");
 // export const AppDataSource = new DataSource({
 //   type: "mysql",
 //   host: "localhost",
@@ -58,7 +59,8 @@ exports.AppDataSource = new typeorm_1.DataSource({
         wallet_entity_1.UserWallet,
         withdraw_entity_1.Withdraw,
         paymentMobile_entity_1.PaymentMobile,
-        userPenalty_entiry_1.UserPenalty
+        userPenalty_entiry_1.UserPenalty,
+        payment_method_entity_1.PaymentMethod
     ],
     // entities: ["entity/*.entity.{ts,js}"],
     logging: true,

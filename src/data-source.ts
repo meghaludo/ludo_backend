@@ -14,6 +14,7 @@ import { UserNotification } from "./entity/userNotification.entity";
 import { Notification } from "./entity/notifucation.entity";
 import { PaymentMobile } from "./entity/paymentMobile.entity";
 import { UserPenalty } from "./entity/userPenalty.entiry";
+import { PaymentMethod } from "./entity/payment_method.entity";
 
 // export const AppDataSource = new DataSource({
 //   type: "mysql",
@@ -57,7 +58,8 @@ export const AppDataSource = new DataSource({
     UserWallet,
     Withdraw,
     PaymentMobile,
-    UserPenalty
+    UserPenalty,
+    PaymentMethod
   ],
   // entities: ["entity/*.entity.{ts,js}"],
   logging: true,
