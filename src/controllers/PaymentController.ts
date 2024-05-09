@@ -48,8 +48,6 @@ export class PaymentController {
 
             const paymentResponse: any = await axios.request(options);
 
-            console.log('paymentResponse ', paymentResponse?.data);
-
             const creteWallet: any = {
                 user_id: userDetails?.id,
                 amount: walletPayload?.amount,
@@ -58,7 +56,7 @@ export class PaymentController {
                 client_txn_id: uuid
             }
 
-            const walletData = await AppDataSource.getRepository(UserWallet).save(creteWallet);
+            await AppDataSource.getRepository(UserWallet).save(creteWallet);
 
             return sendResponse(res, StatusCodes.OK, "Create Order Successfully.", paymentResponse?.data);
         } catch (error) {
@@ -69,10 +67,9 @@ export class PaymentController {
 
     // create payment order 
     public async getOrderStatus(req: any, res: any) {
-        console.log('req', req?.body)
         try {
             const statusPayload = req?.body;
-            console.log('statusPayload', statusPayload)
+
             // fetch result form the from the ludo API
             const options = {
                 method: 'POST',
@@ -110,13 +107,7 @@ export class PaymentController {
                 }
 
                 await AppDataSource.getRepository(UserWallet).save(getWalletData);
-
-                console.log('getWalletData', getWalletData);
             }
-            // console.log('paymentResponse ', paymentResponse);
-            // const 
-            console.log('paymentResponse ', paymentResponse?.data);
-
 
             return sendResponse(res, StatusCodes.OK, "Payment Status Verify Successfully.", paymentResponse?.data);
         } catch (error) {

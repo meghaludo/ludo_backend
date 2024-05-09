@@ -47,7 +47,6 @@ class PaymentController {
                 }
             };
             const paymentResponse = await axios_1.default.request(options);
-            console.log('paymentResponse ', paymentResponse?.data);
             const creteWallet = {
                 user_id: userDetails?.id,
                 amount: walletPayload?.amount,
@@ -55,7 +54,7 @@ class PaymentController {
                 payment_type: 'recharge',
                 client_txn_id: uuid
             };
-            const walletData = await data_source_1.default.getRepository(wallet_entity_1.UserWallet).save(creteWallet);
+            await data_source_1.default.getRepository(wallet_entity_1.UserWallet).save(creteWallet);
             return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Create Order Successfully.", paymentResponse?.data);
         }
         catch (error) {
@@ -65,10 +64,8 @@ class PaymentController {
     }
     // create payment order 
     async getOrderStatus(req, res) {
-        console.log('req', req?.body);
         try {
             const statusPayload = req?.body;
-            console.log('statusPayload', statusPayload);
             // fetch result form the from the ludo API
             const options = {
                 method: 'POST',
@@ -99,11 +96,7 @@ class PaymentController {
                     getWalletData['status'] = 2;
                 }
                 await data_source_1.default.getRepository(wallet_entity_1.UserWallet).save(getWalletData);
-                console.log('getWalletData', getWalletData);
             }
-            // console.log('paymentResponse ', paymentResponse);
-            // const 
-            console.log('paymentResponse ', paymentResponse?.data);
             return (0, responseUtil_1.sendResponse)(res, http_status_codes_1.StatusCodes.OK, "Payment Status Verify Successfully.", paymentResponse?.data);
         }
         catch (error) {
