@@ -943,7 +943,31 @@ export class GameController {
     // cancel user list
     public async cancelGame(req: any, res: any) {
         try {
-            const cancelDetails = req?.body;
+            const cancelDetails : any = req?.body;
+
+            // fetch result form the from the ludo API
+            const options = {
+                method: 'GET',
+                url: 'https://ludo-king-room-code-api.p.rapidapi.com/result',
+                params: {
+                    code: cancelDetails?.game_code,
+                },
+                headers: {
+                    'X-RapidAPI-Key': '493aeced9dmsha82e412b09eaaf0p1c9a5djsnd5a3581ae642',
+                    'X-RapidAPI-Host': 'ludo-king-room-code-api.p.rapidapi.com'
+                }
+            };
+            const gameCodeAPIRes: any = await axios.request(options);
+
+            console.log('gameCodeAPIRes',  gameCodeAPIRes?.data);
+
+            if (gameCodeAPIRes?.data?.status !== 200) {
+                return errorResponse(res, StatusCodes.NOT_FOUND, 'Contact To Administration Or Try After Some Time');
+            } 
+
+            if(gameCodeAPIRes?.data?.player1_name && gameCodeAPIRes?.data?.player2_name) {
+                return errorResponse(res, StatusCodes.CONFLICT, 'Game Already Started Please update result');
+            }
 
             let gameTable: any = await AppDataSource.getRepository(GameTable).findOne({
                 where: { id: Number(cancelDetails?.game_table_id) }
